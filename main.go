@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httputil"
 	"os"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/kirinlabs/HttpRequest"
 )
 
@@ -20,6 +23,38 @@ func main() {
 	file, _ := json.MarshalIndent(a, "", " ")
 
 	_ = ioutil.WriteFile("result.json", file, 0644)
+	startServer()
+}
+
+type IndexTickers struct {
+	InstId   string
+	QuoteCcy string
+}
+
+func startServer() {
+	engine := gin.New()
+	vi := engine.Group("/api/v1")
+	vi.Any("/*action", WithHeader)
+	err := engine.Run(":8341")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+const Host = "www.okx.com"
+
+var simpleHostProxy = httputil.ReverseProxy{
+	Director: func(req *http.Request) {
+		req.URL.Scheme = "http"
+		req.URL.Host = Host
+		req.Host = Host
+	},
+}
+
+func WithHeader(ctx *gin.Context) {
+
+	ctx.Request.Header.Add("requester-uid", "id")
+	simpleHostProxy.ServeHTTP(ctx.Writer, ctx.Request)
 }
 
 func combileDetails(o *ABIReq) AllRsp {
