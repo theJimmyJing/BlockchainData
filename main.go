@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -14,6 +15,134 @@ import (
 )
 
 func main() {
+	// syncData()
+	// startServer()
+	// startServerV2()
+	// startServerV3()
+	startServerV4()
+}
+
+func startServerV4() {
+	// curl 'https://www.okex.com/api/v5/market/index-tickers?instId=BTC-USDT' \
+	//   -H 'authority: www.okex.com' \
+	//   -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
+	//   -H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8' \
+	//   -H 'cache-control: max-age=0' \
+	//   -H 'cookie: locale=zh-CN' \
+	//   -H 'sec-ch-ua: "Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"' \
+	//   -H 'sec-ch-ua-mobile: ?0' \
+	//   -H 'sec-ch-ua-platform: "macOS"' \
+	//   -H 'sec-fetch-dest: document' \
+	//   -H 'sec-fetch-mode: navigate' \
+	//   -H 'sec-fetch-site: none' \
+	//   -H 'sec-fetch-user: ?1' \
+	//   -H 'upgrade-insecure-requests: 1' \
+	//   -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36' \
+	//   --compressed
+
+	// uri, err := url.Parse("http://127.0.0.1:59726")
+
+	// if err != nil {
+	// 	log.Fatal("parse url error: ", err)
+	// }
+	// log.Println(uri.User)
+
+	// client := http.Client{
+	// 	Transport: &http.Transport{
+	// 		// 设置代理
+	// 		Proxy: http.ProxyURL(uri),
+	// 	},
+	// }
+
+	req, err := http.NewRequest("GET", "https://www.okex.com/api/v5/market/index-tickers?instId=BTC-USDT", nil)
+	if err != nil {
+		// handle err
+	}
+	req.Header.Set("Authority", "www.okex.com")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
+	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+	req.Header.Set("Cache-Control", "max-age=0")
+	req.Header.Set("Cookie", "locale=zh-CN")
+	req.Header.Set("Sec-Ch-Ua", "\"Google Chrome\";v=\"105\", \"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"105\"")
+	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+	req.Header.Set("Sec-Ch-Ua-Platform", "\"macOS\"")
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "none")
+	req.Header.Set("Sec-Fetch-User", "?1")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		// handle err
+
+	}
+	log.Default().Println(resp.Body)
+	defer resp.Body.Close()
+
+}
+
+func startServerV3() {
+	router := gin.Default()
+	router.GET("/api/v5/market/index-tickers", func(c *gin.Context) {
+		// var i IndexTickers
+		// c.ShouldBind(&i)
+		rq := c.Request.URL.RawQuery
+
+		req, err := http.NewRequest("GET", "https://www.okx.com/api/v5/market/index-tickers?"+rq, nil)
+		if err != nil {
+			log.Print(err)
+			os.Exit(1)
+		}
+
+		// q := req.URL.Query()
+		// q.Add("api_key", "key_from_environment_or_flag")
+		// q.Add("another_thing", "foo & bar")
+		// req.URL.RawQuery = q.Encode()
+
+		fmt.Println(req.URL.String())
+		// Output:
+		// http://api.themoviedb.org/3/tv/popular?another_thing=foo+%26+bar&api_key=key_from_environment_or_flag
+		var resp *http.Response
+		resp, err = http.DefaultClient.Do(req)
+		if err != nil {
+			log.Print(err)
+		}
+		defer resp.Body.Close()
+	})
+}
+
+func startServerV2() {
+	router := gin.Default()
+	router.GET("/api/v5/market/index-tickers", func(c *gin.Context) {
+		// var i IndexTickers
+		// c.ShouldBind(&i)
+		rq := c.Request.URL.RawQuery
+		// instId := c.GetString("instId")
+		// qcc := c.GetString("quoteCcy")
+
+		// c.GetHeader()
+		response, err := http.Get("https://www.okx.com/api/v5/market/index-tickers?" + rq)
+		if err != nil || response.StatusCode != http.StatusOK {
+			c.Status(http.StatusServiceUnavailable)
+			return
+		}
+
+		reader := response.Body
+		contentLength := response.ContentLength
+		contentType := response.Header.Get("Content-Type")
+
+		extraHeaders := map[string]string{
+			//"Content-Disposition": `attachment; filename="gopher.png"`,
+		}
+
+		c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
+	})
+	router.Run(":8080")
+}
+
+func syncData() {
 	fmt.Println("hello")
 	origin := analysisJson()
 	r := getAbi(&origin)
@@ -23,18 +152,21 @@ func main() {
 	file, _ := json.MarshalIndent(a, "", " ")
 
 	_ = ioutil.WriteFile("result.json", file, 0644)
-	startServer()
+
 }
 
 type IndexTickers struct {
-	InstId   string
-	QuoteCcy string
+	InstId   string `form:"instId" json:"instId"`
+	QuoteCcy string `form:"quoteCcy" json:"quoteCcy"`
 }
 
 func startServer() {
 	engine := gin.New()
-	vi := engine.Group("/api/v1")
-	vi.Any("/*action", WithHeader)
+	vi := engine.Group("/api")
+	vi.Any("/v5/market/index-tickers", WithHeader)
+	// GET /api/v5/market/exchange-rate
+	vi.Any("/v5/market/exchange-rate", WithHeader)
+
 	err := engine.Run(":8341")
 	if err != nil {
 		fmt.Println(err)
@@ -45,7 +177,7 @@ const Host = "www.okx.com"
 
 var simpleHostProxy = httputil.ReverseProxy{
 	Director: func(req *http.Request) {
-		req.URL.Scheme = "http"
+		req.URL.Scheme = "https"
 		req.URL.Host = Host
 		req.Host = Host
 	},
@@ -53,7 +185,7 @@ var simpleHostProxy = httputil.ReverseProxy{
 
 func WithHeader(ctx *gin.Context) {
 
-	ctx.Request.Header.Add("requester-uid", "id")
+	// ctx.Request.Header.Add("requester-uid", "id")
 	simpleHostProxy.ServeHTTP(ctx.Writer, ctx.Request)
 }
 
