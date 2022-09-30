@@ -1,12 +1,15 @@
 package main
 
 import (
+	// "crypto/tls"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"os"
 	"time"
 
@@ -23,36 +26,6 @@ func main() {
 }
 
 func startServerV4() {
-	// curl 'https://www.okex.com/api/v5/market/index-tickers?instId=BTC-USDT' \
-	//   -H 'authority: www.okex.com' \
-	//   -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' \
-	//   -H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8' \
-	//   -H 'cache-control: max-age=0' \
-	//   -H 'cookie: locale=zh-CN' \
-	//   -H 'sec-ch-ua: "Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"' \
-	//   -H 'sec-ch-ua-mobile: ?0' \
-	//   -H 'sec-ch-ua-platform: "macOS"' \
-	//   -H 'sec-fetch-dest: document' \
-	//   -H 'sec-fetch-mode: navigate' \
-	//   -H 'sec-fetch-site: none' \
-	//   -H 'sec-fetch-user: ?1' \
-	//   -H 'upgrade-insecure-requests: 1' \
-	//   -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36' \
-	//   --compressed
-
-	// uri, err := url.Parse("http://127.0.0.1:59726")
-
-	// if err != nil {
-	// 	log.Fatal("parse url error: ", err)
-	// }
-	// log.Println(uri.User)
-
-	// client := http.Client{
-	// 	Transport: &http.Transport{
-	// 		// 设置代理
-	// 		Proxy: http.ProxyURL(uri),
-	// 	},
-	// }
 
 	req, err := http.NewRequest("GET", "https://www.okex.com/api/v5/market/index-tickers?instId=BTC-USDT", nil)
 	if err != nil {
@@ -73,14 +46,36 @@ func startServerV4() {
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
 
-	resp, err := http.DefaultClient.Do(req)
+	proxy, _ := url.Parse("http://127.0.0.1:59726")
+	tr := &http.Transport{
+		Proxy:           http.ProxyURL(proxy),
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   time.Second * 5, //超时时间
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		// handle err
+		log.Default().Fatalf("%+v", err)
 
 	}
-	log.Default().Println(resp.Body)
+	r, err := ParseResponse(resp)
+	log.Default().Printf("%+v", r)
 	defer resp.Body.Close()
 
+}
+func ParseResponse(response *http.Response) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	body, err := ioutil.ReadAll(response.Body)
+	if err == nil {
+		err = json.Unmarshal(body, &result)
+	}
+
+	return result, err
 }
 
 func startServerV3() {
@@ -105,6 +100,7 @@ func startServerV3() {
 		// Output:
 		// http://api.themoviedb.org/3/tv/popular?another_thing=foo+%26+bar&api_key=key_from_environment_or_flag
 		var resp *http.Response
+
 		resp, err = http.DefaultClient.Do(req)
 		if err != nil {
 			log.Print(err)
