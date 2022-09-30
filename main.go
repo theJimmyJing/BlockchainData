@@ -2,14 +2,13 @@ package main
 
 import (
 	// "crypto/tls"
-	"crypto/tls"
+
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"os"
 	"time"
 
@@ -20,14 +19,14 @@ import (
 func main() {
 	// syncData()
 	// startServer()
-	// startServerV2()
+	startGin()
 	// startServerV3()
-	startServerV4()
+	// startServerV4()
 }
 
-func startServerV4() {
+func getInstIdTickerInfo(params string) *http.Response {
 
-	req, err := http.NewRequest("GET", "https://www.okex.com/api/v5/market/index-tickers?instId=BTC-USDT", nil)
+	req, err := http.NewRequest("GET", "https://www.okex.com/api/v5/market/index-tickers?"+params, nil)
 	if err != nil {
 		// handle err
 	}
@@ -46,26 +45,27 @@ func startServerV4() {
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
 
-	proxy, _ := url.Parse("http://127.0.0.1:59726")
-	tr := &http.Transport{
-		Proxy:           http.ProxyURL(proxy),
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
+	// proxy, _ := url.Parse("http://127.0.0.1:59726")
+	// tr := &http.Transport{
+	// 	Proxy:           http.ProxyURL(proxy),
+	// 	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	// }
 
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   time.Second * 5, //超时时间
-	}
+	// client := &http.Client{
+	// 	Transport: tr,
+	// 	Timeout:   time.Second * 5, //超时时间
+	// }
 
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		// handle err
 		log.Default().Fatalf("%+v", err)
 
 	}
-	r, err := ParseResponse(resp)
-	log.Default().Printf("%+v", r)
-	defer resp.Body.Close()
+	// r, err := ParseResponse(resp)
+	// log.Default().Printf("%+v", r)
+	// defer resp.Body.Close()
+	return resp
 
 }
 func ParseResponse(response *http.Response) (map[string]interface{}, error) {
@@ -109,30 +109,28 @@ func startServerV3() {
 	})
 }
 
-func startServerV2() {
+func startGin() {
 	router := gin.Default()
 	router.GET("/api/v5/market/index-tickers", func(c *gin.Context) {
-		// var i IndexTickers
-		// c.ShouldBind(&i)
 		rq := c.Request.URL.RawQuery
-		// instId := c.GetString("instId")
-		// qcc := c.GetString("quoteCcy")
-
-		// c.GetHeader()
-		response, err := http.Get("https://www.okx.com/api/v5/market/index-tickers?" + rq)
-		if err != nil || response.StatusCode != http.StatusOK {
-			c.Status(http.StatusServiceUnavailable)
-			return
-		}
-
+		response := getInstIdTickerInfo(rq)
 		reader := response.Body
 		contentLength := response.ContentLength
 		contentType := response.Header.Get("Content-Type")
-
 		extraHeaders := map[string]string{
 			//"Content-Disposition": `attachment; filename="gopher.png"`,
 		}
-
+		c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
+	})
+	router.GET("/api/v5/market/index-tickers", func(c *gin.Context) {
+		rq := c.Request.URL.RawQuery
+		response := getInstIdTickerInfo(rq)
+		reader := response.Body
+		contentLength := response.ContentLength
+		contentType := response.Header.Get("Content-Type")
+		extraHeaders := map[string]string{
+			//"Content-Disposition": `attachment; filename="gopher.png"`,
+		}
 		c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
 	})
 	router.Run(":8080")
