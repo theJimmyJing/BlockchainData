@@ -29,6 +29,53 @@ func getInstIdTickerInfo(params string) *http.Response {
 	req, err := http.NewRequest("GET", "https://www.okex.com/api/v5/market/index-tickers?"+params, nil)
 	if err != nil {
 		// handle err
+		log.Printf("%+v", err)
+	}
+	req.Header.Set("Authority", "www.okex.com")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
+	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+	req.Header.Set("Cache-Control", "max-age=0")
+	req.Header.Set("Cookie", "locale=zh-CN")
+	req.Header.Set("Sec-Ch-Ua", "\"Google Chrome\";v=\"105\", \"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"105\"")
+	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+	req.Header.Set("Sec-Ch-Ua-Platform", "\"macOS\"")
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	req.Header.Set("Sec-Fetch-Site", "none")
+	req.Header.Set("Sec-Fetch-User", "?1")
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
+
+	// proxy, _ := url.Parse("http://127.0.0.1:59726")
+	// tr := &http.Transport{
+	// 	Proxy:           http.ProxyURL(proxy),
+	// 	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	// }
+
+	// client := &http.Client{
+	// 	Transport: tr,
+	// 	Timeout:   time.Second * 5, //超时时间
+	// }
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		// handle err
+		log.Default().Printf("%+v", err)
+
+	}
+	// r, err := ParseResponse(resp)
+	// log.Default().Printf("%+v", r)
+	// defer resp.Body.Close()
+	return resp
+
+}
+
+func getExchangeRate() *http.Response {
+
+	req, err := http.NewRequest("GET", "https://www.okex.com/api/v5/market/exchange-rate", nil)
+	if err != nil {
+		// handle err
+		log.Printf("%+v", err)
 	}
 	req.Header.Set("Authority", "www.okex.com")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
@@ -68,6 +115,7 @@ func getInstIdTickerInfo(params string) *http.Response {
 	return resp
 
 }
+
 func ParseResponse(response *http.Response) (map[string]interface{}, error) {
 	var result map[string]interface{}
 	body, err := ioutil.ReadAll(response.Body)
@@ -122,9 +170,8 @@ func startGin() {
 		}
 		c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
 	})
-	router.GET("/api/v5/market/index-tickers", func(c *gin.Context) {
-		rq := c.Request.URL.RawQuery
-		response := getInstIdTickerInfo(rq)
+	router.GET("/api/v5/market/exchange-rate", func(c *gin.Context) {
+		response := getExchangeRate()
 		reader := response.Body
 		contentLength := response.ContentLength
 		contentType := response.Header.Get("Content-Type")
