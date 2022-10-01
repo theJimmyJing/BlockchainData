@@ -194,7 +194,8 @@ func startGin() {
 		extraHeaders := map[string]string{
 			//"Content-Disposition": `attachment; filename="gopher.png"`,
 		}
-		c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
+		// c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
+		c.JSON(http.StatusOK, od.InstIdMap[rq])
 	})
 	router.GET("/api/v5/market/exchange-rate", func(c *gin.Context) {
 		now := time.Now().UnixNano()
@@ -211,7 +212,8 @@ func startGin() {
 		extraHeaders := map[string]string{
 			//"Content-Disposition": `attachment; filename="gopher.png"`,
 		}
-		c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
+		// c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
+		c.JSON(http.StatusOK, od.Rate)
 	})
 	router.Run(":8081")
 }
