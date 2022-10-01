@@ -182,7 +182,7 @@ func startGin() {
 	router.GET("/api/v5/market/index-tickers", func(c *gin.Context) {
 		now := time.Now().UnixNano()
 		diff := now - int64(od.InstTime)
-		fmt.Println("now = " + string(now) + " insttime = " + string(od.InstTime))
+		log.Default().Println("now = " + string(now) + " insttime = " + string(od.InstTime))
 		rq := c.Request.URL.RawQuery
 		if diff < int64(2*time.Second) {
 			c.JSON(http.StatusOK, od.InstIdMap[rq])
