@@ -219,7 +219,7 @@ func startGin() {
 		c.JSON(http.StatusOK, od.Rate)
 		return
 	})
-	router.Run(":8081")
+	router.Run(":8080")
 }
 
 func syncData() {
