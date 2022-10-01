@@ -19,6 +19,11 @@ import (
 func main() {
 	// syncData()
 	// startServer()
+	// now := time.Now().UnixNano()
+	// time.Sleep(time.Second)
+	// now2 := time.Now().UnixNano()
+	// fmt.Println(now2 - now)
+
 	startGin()
 	// startServerV3()
 	// startServerV4()
@@ -46,26 +51,20 @@ func getInstIdTickerInfo(params string) *http.Response {
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
 
-	// proxy, _ := url.Parse("http://127.0.0.1:59726")
-	// tr := &http.Transport{
-	// 	Proxy:           http.ProxyURL(proxy),
-	// 	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	// }
-
-	// client := &http.Client{
-	// 	Transport: tr,
-	// 	Timeout:   time.Second * 5, //超时时间
-	// }
-
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		// handle err
 		log.Default().Printf("%+v", err)
 
 	}
-	// r, err := ParseResponse(resp)
-	// log.Default().Printf("%+v", r)
-	// defer resp.Body.Close()
+	r, err := ParseResponse(resp)
+	if err != nil {
+		log.Default().Printf("%+v", err)
+		return nil
+	}
+	log.Default().Printf("resp %+v", r)
+	od.InstIdMap[params] = r
+	od.InstTime = uint64(time.Now().UnixNano())
 	return resp
 
 }
@@ -106,11 +105,17 @@ func getExchangeRate() *http.Response {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		// handle err
-		log.Default().Fatalf("%+v", err)
+		log.Default().Printf("%+v", err)
 
 	}
-	// r, err := ParseResponse(resp)
-	// log.Default().Printf("%+v", r)
+	r, err := ParseResponse(resp)
+	if err != nil {
+		log.Default().Printf("%+v", err)
+		return nil
+	}
+	log.Default().Printf("resp %+v", r)
+	od.Rate = r
+	od.RateTime = uint64(time.Now().UnixNano())
 	// defer resp.Body.Close()
 	return resp
 
@@ -157,10 +162,31 @@ func startServerV3() {
 	})
 }
 
+type OkData struct {
+	InstIdMap map[string]map[string]interface{}
+	InstTime  uint64
+	Rate      map[string]interface{}
+	RateTime  uint64
+}
+
+var od = OkData{
+	InstIdMap: make(map[string]map[string]interface{}),
+	Rate:      make(map[string]interface{}),
+	InstTime:  0,
+	RateTime:  0,
+}
+
 func startGin() {
+
 	router := gin.Default()
 	router.GET("/api/v5/market/index-tickers", func(c *gin.Context) {
+		now := time.Now().UnixNano()
+		diff := now - int64(od.InstTime)
 		rq := c.Request.URL.RawQuery
+		if diff < int64(2*time.Second) {
+			c.JSON(http.StatusOK, od.InstIdMap[rq])
+			return
+		}
 		response := getInstIdTickerInfo(rq)
 		reader := response.Body
 		contentLength := response.ContentLength
@@ -171,6 +197,13 @@ func startGin() {
 		c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
 	})
 	router.GET("/api/v5/market/exchange-rate", func(c *gin.Context) {
+		now := time.Now().UnixNano()
+		diff := now - int64(od.RateTime)
+		// rq := c.Request.URL.RawQuery
+		if diff < int64(2*time.Second) {
+			c.JSON(http.StatusOK, od.Rate)
+			return
+		}
 		response := getExchangeRate()
 		reader := response.Body
 		contentLength := response.ContentLength
@@ -180,7 +213,7 @@ func startGin() {
 		}
 		c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
 	})
-	router.Run(":8080")
+	router.Run(":8081")
 }
 
 func syncData() {
