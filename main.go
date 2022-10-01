@@ -217,6 +217,7 @@ func startGin() {
 		// }
 		// c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
 		c.JSON(http.StatusOK, od.Rate)
+		return
 	})
 	router.Run(":8081")
 }
