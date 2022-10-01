@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -182,21 +183,22 @@ func startGin() {
 	router.GET("/api/v5/market/index-tickers", func(c *gin.Context) {
 		now := time.Now().UnixNano()
 		diff := now - int64(od.InstTime)
-		log.Default().Println("now = " + string(now) + " insttime = " + string(od.InstTime))
+		log.Default().Println("now = " + strconv.Itoa(int(now)) + " insttime = " + strconv.Itoa(int(od.InstTime)))
 		rq := c.Request.URL.RawQuery
 		if diff < int64(2*time.Second) {
 			c.JSON(http.StatusOK, od.InstIdMap[rq])
 			return
 		}
-		response := getInstIdTickerInfo(rq)
-		reader := response.Body
-		contentLength := response.ContentLength
-		contentType := response.Header.Get("Content-Type")
-		extraHeaders := map[string]string{
-			//"Content-Disposition": `attachment; filename="gopher.png"`,
-		}
+		_ = getInstIdTickerInfo(rq)
+		// reader := response.Body
+		// contentLength := response.ContentLength
+		// contentType := response.Header.Get("Content-Type")
+		// extraHeaders := map[string]string{
+		// 	//"Content-Disposition": `attachment; filename="gopher.png"`,
+		// }
 		// c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
 		c.JSON(http.StatusOK, od.InstIdMap[rq])
+		return
 	})
 	router.GET("/api/v5/market/exchange-rate", func(c *gin.Context) {
 		now := time.Now().UnixNano()
@@ -206,13 +208,13 @@ func startGin() {
 			c.JSON(http.StatusOK, od.Rate)
 			return
 		}
-		response := getExchangeRate()
-		reader := response.Body
-		contentLength := response.ContentLength
-		contentType := response.Header.Get("Content-Type")
-		extraHeaders := map[string]string{
-			//"Content-Disposition": `attachment; filename="gopher.png"`,
-		}
+		_ = getExchangeRate()
+		// reader := response.Body
+		// contentLength := response.ContentLength
+		// contentType := response.Header.Get("Content-Type")
+		// extraHeaders := map[string]string{
+		// 	//"Content-Disposition": `attachment; filename="gopher.png"`,
+		// }
 		// c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
 		c.JSON(http.StatusOK, od.Rate)
 	})
