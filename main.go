@@ -225,13 +225,6 @@ func startGin() {
 			return
 		}
 		_ = getInstIdTickerInfo(rq)
-		// reader := response.Body
-		// contentLength := response.ContentLength
-		// contentType := response.Header.Get("Content-Type")
-		// extraHeaders := map[string]string{
-		// 	//"Content-Disposition": `attachment; filename="gopher.png"`,
-		// }
-		// c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
 		c.JSON(http.StatusOK, od.InstIdMap[rq])
 		return
 	})
@@ -244,28 +237,45 @@ func startGin() {
 			return
 		}
 		_ = getExchangeRate()
-		// reader := response.Body
-		// contentLength := response.ContentLength
-		// contentType := response.Header.Get("Content-Type")
-		// extraHeaders := map[string]string{
-		// 	//"Content-Disposition": `attachment; filename="gopher.png"`,
-		// }
-		// c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
 		c.JSON(http.StatusOK, od.Rate)
+		return
+	})
+
+	router.GET("/api/v5/market/tokenlist", func(c *gin.Context) {
+		// allResults := make([]AllResult, 0)
+		// 打开json文件
+		jsonFile, err := os.Open("result.json")
+
+		// 最好要处理以下错误
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// 要记得关闭
+		defer jsonFile.Close()
+
+		byteValue, _ := ioutil.ReadAll(jsonFile)
+		// fmt.Println(string(byteValue))
+		var result map[string]interface{}
+		json.Unmarshal([]byte(byteValue), &result)
+
+		c.JSON(http.StatusOK, result)
 		return
 	})
 	router.Run(":8080")
 }
 
+var tokenList string
+
 func syncData() {
-	fmt.Println("hello")
+	fmt.Println("start sync token list ")
 	origin := analysisJson()
 	r := getAbi(&origin)
 	fmt.Printf("first result ---------\n %+v", *r)
 	a := combileDetails(r)
 	fmt.Printf("second result ---------\n %+v", *r)
 	file, _ := json.MarshalIndent(a, "", " ")
-
+	tokenList = string(file)
 	_ = ioutil.WriteFile("result.json", file, 0644)
 
 }
