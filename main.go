@@ -65,7 +65,7 @@ func getInstIdTickerInfo(params string) *http.Response {
 	}
 	log.Default().Printf("resp %+v", r)
 	od.InstIdMap[params] = r
-	od.InstTime = uint64(time.Now().UnixNano())
+	od.InstTimeMap[params] = uint64(time.Now().UnixNano())
 	return resp
 
 }
@@ -165,16 +165,18 @@ func startServerV3() {
 
 type OkData struct {
 	InstIdMap map[string]map[string]interface{}
-	InstTime  uint64
-	Rate      map[string]interface{}
-	RateTime  uint64
+	// InstTime    uint64
+	InstTimeMap map[string]uint64
+	Rate        map[string]interface{}
+	RateTime    uint64
 }
 
 var od = OkData{
 	InstIdMap: make(map[string]map[string]interface{}),
 	Rate:      make(map[string]interface{}),
-	InstTime:  0,
-	RateTime:  0,
+	// InstTime:  0,
+	InstTimeMap: make(map[string]uint64),
+	RateTime:    0,
 }
 
 func Cors() gin.HandlerFunc {
@@ -217,9 +219,10 @@ func startGin() {
 	router.Use(Cors()) //开启中间件 允许使用跨域请求
 	router.GET("/api/v5/market/index-tickers", func(c *gin.Context) {
 		now := time.Now().UnixNano()
-		diff := now - int64(od.InstTime)
-		log.Default().Println("now = " + strconv.Itoa(int(now)) + " insttime = " + strconv.Itoa(int(od.InstTime)))
 		rq := c.Request.URL.RawQuery
+		diff := now - int64(od.InstTimeMap[rq])
+		log.Default().Println("now = " + strconv.Itoa(int(now)) + " insttime = " + strconv.Itoa(int(od.InstTime)))
+
 		if diff < int64(2*time.Second) {
 			log.Default().Println(od.InstIdMap[rq])
 			c.JSON(http.StatusOK, od.InstIdMap[rq])
