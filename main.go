@@ -221,10 +221,12 @@ func startGin() {
 		log.Default().Println("now = " + strconv.Itoa(int(now)) + " insttime = " + strconv.Itoa(int(od.InstTime)))
 		rq := c.Request.URL.RawQuery
 		if diff < int64(2*time.Second) {
+			log.Default().Println(od.InstIdMap[rq])
 			c.JSON(http.StatusOK, od.InstIdMap[rq])
 			return
 		}
 		_ = getInstIdTickerInfo(rq)
+		log.Default().Println(od.InstIdMap[rq])
 		c.JSON(http.StatusOK, od.InstIdMap[rq])
 		return
 	})
