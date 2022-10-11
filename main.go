@@ -221,7 +221,7 @@ func startGin() {
 		now := time.Now().UnixNano()
 		rq := c.Request.URL.RawQuery
 		diff := now - int64(od.InstTimeMap[rq])
-		log.Default().Println("now = " + strconv.Itoa(int(now)) + " insttime = " + strconv.Itoa(int(od.InstTime)))
+		log.Default().Println("now = " + strconv.Itoa(int(now)) + " insttime = " + strconv.Itoa(int(od.InstTimeMap[rq])))
 
 		if diff < int64(2*time.Second) {
 			log.Default().Println(od.InstIdMap[rq])
