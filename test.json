@@ -41,7 +41,7 @@
             "chainId": 1,
             "symbol": "USDC",
             "decimals": 6,
-            "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "address": "0xa2327a938Febf5FEC13baCFb16Ae10EcBc4cbDCF",
             "logoURI": "https://freechat.world/images/usdc.png",
             "abi": ""
         },
