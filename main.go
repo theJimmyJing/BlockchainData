@@ -3,6 +3,7 @@ package main
 import (
 	// "crypto/tls"
 
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,8 +11,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"os/exec"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,7 @@ import (
 )
 
 func main() {
-	uniswapFcc()
+	operateAllData()
 	// startServer()
 	// now := time.Now().UnixNano()
 	// time.Sleep(time.Second)
@@ -29,17 +30,40 @@ func main() {
 	// startGin()
 	// startServerV3()
 	// startServerV4()
-
 }
 
-func uniswapFcc() {
-	// curl 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3' \
+func operateAllData() {
+	router := gin.Default()
+	router.GET("/api/v5/operate/all", func(c *gin.Context) {
+		var data OperateData
+		freechatData := uniswapFCCToken()
+		if freechatData != "" {
+			fmt.Println("freechatData: ", freechatData)
+			// data.Freechat.MarketValue = freechatData
+			// data.Freechat = freechatData
+		}
+
+		jsonBytes, err := json.Marshal(data)
+		if err != nil {
+			fmt.Println("struct to bytes err : ", err)
+		}
+
+		fmt.Println("resp : ", jsonBytes)
+		fmt.Println("resp 2: ", string(jsonBytes))
+		c.JSON(http.StatusOK, string(jsonBytes))
+
+	})
+	router.Run(":8080")
+}
+
+func uniswapFCCToken() string {
+	// scurl := `'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3' \
 	//   -H 'authority: api.thegraph.com' \
 	//   -H 'accept: application/json, multipart/mixed' \
 	//   -H 'accept-language: zh-CN,zh;q=0.9' \
 	//   -H 'content-type: application/json' \
 	//   -H 'origin: https://api.thegraph.com' \
-	//   -H 'referer: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3/graphql?query=%7B%0A++token%28id%3A+%220x171b1daefac13a0a3524fcb6beddc7b31e58e079%22%2C+subgraphError%3A+allow%29+%7B%0A++++decimals%0A++++derivedETH%0A++++feesUSD%0A++++name%0A++++poolCount%0A++++symbol%0A++++totalSupply%0A++++totalValueLocked%0A++++totalValueLockedUSDUntracked%0A++++totalValueLockedUSD%0A++++txCount%0A++++untrackedVolumeUSD%0A++++volume%0A++++volumeUSD%0A++%7D%0A%7D' \
+	//   -H 'referer: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3/graphql?query=%7B%0A++token%28id%3A+%220x171b1daefac13a0a3524fcb6beddc7b31e58e079%22%29+%7B%0A++++decimals%0A++++derivedETH%0A++++feesUSD%0A++++name%0A++++poolCount%0A++%7D%0A%7D' \
 	//   -H 'sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"' \
 	//   -H 'sec-ch-ua-mobile: ?0' \
 	//   -H 'sec-ch-ua-platform: "macOS"' \
@@ -47,61 +71,38 @@ func uniswapFcc() {
 	//   -H 'sec-fetch-mode: cors' \
 	//   -H 'sec-fetch-site: same-origin' \
 	//   -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36' \
-	//   --data-raw '{"query":"{\n  token(id: \"0x171b1daefac13a0a3524fcb6beddc7b31e58e079\", subgraphError: allow) {\n    decimals\n    derivedETH\n    feesUSD\n    name\n    poolCount\n    symbol\n    totalSupply\n    totalValueLocked\n    totalValueLockedUSDUntracked\n    totalValueLockedUSD\n    txCount\n    untrackedVolumeUSD\n    volume\n    volumeUSD\n  }\n}","variables":null,"extensions":{"headers":null}}' \
-	//   --compressed
+	//   --data '{"query":"{\n  token(id: \"0x171b1daefac13a0a3524fcb6beddc7b31e58e079\") {\n    decimals\n    derivedETH\n    feesUSD\n    name\n    poolCount\n  }\n}","variables":null,"extensions":{"headers":null}}' \
+	//   --compressed`
 
-	// curl 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3' \
+	// 	scurl := `curl 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3' \
 	//   -H 'authority: api.thegraph.com' \
 	//   -H 'accept: application/json, multipart/mixed' \
 	//   -H 'accept-language: zh-CN,zh;q=0.9' \
 	//   -H 'content-type: application/json' \
 	//   -H 'origin: https://api.thegraph.com' \
-	//   -H 'referer: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3/graphql?query=%7B%0A++token%28id%3A+%220x171b1daefac13a0a3524fcb6beddc7b31e58e079%22%29+%7B%0A++++id%0A++%7D%0A%7D' \
+	//   -H 'referer: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3/graphql?query=%7B%0A++token%28id%3A+%220x171b1daefac13a0a3524fcb6beddc7b31e58e079%22%29+%7B%0A++++decimals%0A++++derivedETH%0A++++feesUSD%0A++++name%0A++++poolCount%0A++%7D%0A%7D' \
 	//   -H 'sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"' \
-	//   -H 'sec-ch-ua-mobile: ?0' \
-	//   -H 'sec-ch-ua-platform: "macOS"' \
-	//   -H 'sec-fetch-dest: empty' \
-	//   -H 'sec-fetch-mode: cors' \
-	//   -H 'sec-fetch-site: same-origin' \
 	//   -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36' \
-	//   --data-raw '{"query":"{\n  token(id: \"0x171b1daefac13a0a3524fcb6beddc7b31e58e079\") {\n    id\n  }\n}","variables":null,"extensions":{"headers":null}}' \
-	//   --compressed
+	//   --data-raw '{"query":"{\n  token(id: \"0x171b1daefac13a0a3524fcb6beddc7b31e58e079\") {\n    decimals\n    derivedETH\n    feesUSD\n    name\n    poolCount\n  }\n}","variables":null,"extensions":{"headers":null}}' \
+	//   --compressed`
 
-	body := strings.NewReader("{\"query\":\"{token(id: \"0x171b1daefac13a0a3524fcb6beddc7b31e58e079\") {id\n  }}\",\"variables\":null,\"extensions\":{\"headers\":null}}")
-	req, err := http.NewRequest("POST", "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3", body)
+	cmd := exec.Command("sh", "./uniswap_fcc_token.sh") // chmod -R 777 Tokenlist (Permission failed)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout // 标准输出
+	cmd.Stderr = &stderr // 标准错误
+	err := cmd.Run()
 	if err != nil {
-		// handle err
+		log.Fatalf("cmd.Run() failed with", err)
+		return ""
 	}
+	outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
 
-	req.Header.Set("Authority", "api.thegraph.com")
-	req.Header.Set("Accept", "application/json, multipart/mixed")
-	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Origin", "https://api.thegraph.com")
-	req.Header.Set("Referer", "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3/graphql?query=%7B%0A++token%28id%3A+%220x171b1daefac13a0a3524fcb6beddc7b31e58e079%22%29+%7B%0A++++id%0A++%7D%0A%7D")
-	req.Header.Set("Sec-Ch-Ua", "\"Chromium\";v=\"106\", \"Google Chrome\";v=\"106\", \"Not;A=Brand\";v=\"99\"")
-	req.Header.Set("Sec-Ch-Ua-Mobile", "?0")
-	req.Header.Set("Sec-Ch-Ua-Platform", "\"macOS\"")
-	req.Header.Set("Sec-Fetch-Dest", "empty")
-	req.Header.Set("Sec-Fetch-Mode", "cors")
-	req.Header.Set("Sec-Fetch-Site", "same-origin")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36")
+	fmt.Println("strOut : ", outStr)
+	fmt.Println("errStr ：", errStr)
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		// handle err
-		fmt.Println("resp err: ", err)
-	}
-	defer resp.Body.Close()
-
-	fmt.Println("XXXX : ", resp)
-
-	r, err := ParseResponse(resp)
-	if err != nil {
-		fmt.Println("parse res err", err)
-	}
-	fmt.Println("result: ", r)
-
+	return outStr
+	// TODO read data from Stdout and
 }
 
 func getInstIdTickerInfo(params string) *http.Response {
@@ -110,6 +111,7 @@ func getInstIdTickerInfo(params string) *http.Response {
 	if err != nil {
 		// handle err
 		log.Printf("%+v", err)
+
 	}
 	req.Header.Set("Authority", "www.okex.com")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
@@ -594,4 +596,75 @@ type ResultRsp struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
 	Result  string `json:"result"`
+}
+
+// uniswap token struct
+type UniswapToken struct {
+	DerivedETH                   string `json:"derivedETH"`
+	FeesUSD                      string `json:"feesUSD"`
+	Name                         string `json:"name"`
+	PoolCount                    string `json:"poolCount"`
+	Symbol                       string `json:"symbol"`
+	TotalSupply                  string `json:"totalSupply"`
+	TotalValueLocked             string `json:"totalValueLocked"`
+	TotalValueLockedUSD          string `json:"totalValueLockedUSD"`
+	TotalValueLockedUSDUntracked string `json:"totalValueLockedUSDUntracked"`
+	TxCount                      string `json:"txCount"`
+	UntrackedVolumeUSD           string `json:"untrackedVolumeUSD"`
+	Volume                       string `json:"volume"`
+	VolumeUSD                    string `json:"volumeUSD"`
+	Decimals                     string `json:"decimals"`
+}
+
+// uniswap token struct
+type OperateData struct {
+	Freechat  Freechat  `json:"freechat"`
+	User      User      `json:"user"`
+	FPay      FPay      `json:"FPay"`
+	ECommerce ECommerce `json:"eCommerce"`
+	Ad        Ad        `json:"ad"`
+	NFT       NFT       `json:"NFT"`
+	Game      Game      `json:"game"`
+}
+
+type Freechat struct {
+	TotalEarn           string `json:"totalEarn"`
+	DayEarn             string `json:"dayEarn"`
+	DayEarnIncrease     string `json:"dayEarnIncrease"`
+	WeekEarn            string `json:"weekEarn"`
+	WeekEarnIncrease    string `json:"weekEarnIncrease"`
+	MonthEarn           string `json:"monthEarn"`
+	MonthEarnIncrease   string `json:"monthEarnIncrease"`
+	NowPrice            string `json:"nowPrice"`
+	MarketValue         string `json:"marketValue"`
+	MarketValueIncrease string `json:"marketValueIncrease"`
+	DayVolume           string `json:"dayVolume"`
+	DayVolumeIncrease   string `json:"dayVolumeIncrease"`
+	FccUser             string `json:"fccUser"`
+	FccUserIncrease     string `json:"fccUserIncrease"`
+	TotalProfit         string `json:"totalProfit"`
+	WaitProfit          string `json:"waitProfit"`
+	PerFccProfit        string `json:"perFccProfit"`
+	PledgeProfit        string `json:"pledgeProfit"`
+	PledgeRate          string `json:"pledgeRate"`
+}
+type User struct {
+	Total               int    `json:"total"`
+	DayIncrease         string `json:"dayIncrease"`
+	DayActive           int    `json:"dayActive"`
+	DayActiveIncrease   string `json:"dayActiveIncrease"`
+	WeekActive          int    `json:"weekActive"`
+	WeekActiveIncrease  string `json:"weekActiveIncrease"`
+	MonthActive         int    `json:"monthActive"`
+	MonthActiveIncrease string `json:"monthActiveIncrease"`
+}
+type FPay struct {
+}
+type ECommerce struct {
+}
+type Ad struct {
+}
+type NFT struct {
+}
+type Game struct {
 }
