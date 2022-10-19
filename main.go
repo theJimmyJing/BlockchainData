@@ -36,12 +36,12 @@ func main() {
 func operateAllData() {
 	router := gin.Default()
 	router.GET("/api/v5/operate/all", func(c *gin.Context) {
-		var data OperateData
+		var data = OperateData{}
 		fccToken := uniswapFCCToken()
 		if fccToken != (UniswapToken{}) {
 			fmt.Println("fccToken: ", fccToken)
-			// data.Freechat.MarketValue = freechatData
-			// data.Freechat = freechatData
+			// TODO 转换返回值
+
 		}
 
 		jsonBytes, err := json.Marshal(data)
@@ -57,6 +57,12 @@ func operateAllData() {
 	router.Run(":8080")
 }
 
+/*
+* {"derivedETH":"0","feesUSD":"108.3979488349600340149325490092877","name":"Freechat Coin","poolCount":"0",
+* "symbol":"FCC","totalSupply":"28368","totalValueLocked":"199940134.57160359567214293","totalValueLockedUSD":"0",
+* "totalValueLockedUSDUntracked":"0","txCount":"108","untrackedVolumeUSD":"18066.32480582667233582209150154796",
+* "volume":"456421.018775415938823971","volumeUSD":"36132.6496116533446716441830030959","decimals":"18"}
+ */
 func uniswapFCCToken() UniswapToken {
 	// scurl := `'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3' \
 	//   -H 'authority: api.thegraph.com' \
