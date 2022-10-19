@@ -20,7 +20,8 @@ import (
 )
 
 func main() {
-	operateAllData()
+	uniswapFCCToken()
+	// operateAllData()
 	// startServer()
 	// now := time.Now().UnixNano()
 	// time.Sleep(time.Second)
@@ -36,9 +37,9 @@ func operateAllData() {
 	router := gin.Default()
 	router.GET("/api/v5/operate/all", func(c *gin.Context) {
 		var data OperateData
-		freechatData := uniswapFCCToken()
-		if freechatData != "" {
-			fmt.Println("freechatData: ", freechatData)
+		fccToken := uniswapFCCToken()
+		if fccToken != (UniswapToken{}) {
+			fmt.Println("fccToken: ", fccToken)
 			// data.Freechat.MarketValue = freechatData
 			// data.Freechat = freechatData
 		}
@@ -56,7 +57,7 @@ func operateAllData() {
 	router.Run(":8080")
 }
 
-func uniswapFCCToken() string {
+func uniswapFCCToken() UniswapToken {
 	// scurl := `'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3' \
 	//   -H 'authority: api.thegraph.com' \
 	//   -H 'accept: application/json, multipart/mixed' \
@@ -91,17 +92,32 @@ func uniswapFCCToken() string {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout // 标准输出
 	cmd.Stderr = &stderr // 标准错误
+
+	var resp = UniswapResp{}
 	err := cmd.Run()
 	if err != nil {
 		log.Fatalf("cmd.Run() failed with", err)
-		return ""
 	}
 	outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
 
-	fmt.Println("strOut : ", outStr)
+	fmt.Println("outStr : ", outStr)
 	fmt.Println("errStr ：", errStr)
 
-	return outStr
+	// json转结构体
+	uerr := json.Unmarshal(stdout.Bytes(), &resp)
+	if uerr != nil {
+		log.Fatalf("stdout-> UniswapToken err", uerr)
+	}
+	fmt.Println("fccToken : ", resp)
+
+	// 结构体转json
+	jsonBytes, err := json.Marshal(UniswapToken(resp.Data.Token))
+	if err != nil {
+		fmt.Println("struct to bytes err : ", err)
+	}
+	fmt.Println("UniswapToken: ", string(jsonBytes))
+
+	return UniswapToken(resp.Data.Token)
 	// TODO read data from Stdout and
 }
 
@@ -599,6 +615,30 @@ type ResultRsp struct {
 }
 
 // uniswap token struct
+type UniswapResp struct {
+	Data UniswapData `json:"data"`
+}
+type UniswapData struct {
+	Token Token `json:"token"`
+}
+
+type Token struct {
+	DerivedETH                   string `json:"derivedETH"`
+	FeesUSD                      string `json:"feesUSD"`
+	Name                         string `json:"name"`
+	PoolCount                    string `json:"poolCount"`
+	Symbol                       string `json:"symbol"`
+	TotalSupply                  string `json:"totalSupply"`
+	TotalValueLocked             string `json:"totalValueLocked"`
+	TotalValueLockedUSD          string `json:"totalValueLockedUSD"`
+	TotalValueLockedUSDUntracked string `json:"totalValueLockedUSDUntracked"`
+	TxCount                      string `json:"txCount"`
+	UntrackedVolumeUSD           string `json:"untrackedVolumeUSD"`
+	Volume                       string `json:"volume"`
+	VolumeUSD                    string `json:"volumeUSD"`
+	Decimals                     string `json:"decimals"`
+}
+
 type UniswapToken struct {
 	DerivedETH                   string `json:"derivedETH"`
 	FeesUSD                      string `json:"feesUSD"`
