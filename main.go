@@ -20,8 +20,8 @@ import (
 )
 
 func main() {
-	// uniswapFCCToken()
-	operateAllData()
+	startOperateAPIs()
+
 	// startServer()
 	// now := time.Now().UnixNano()
 	// time.Sleep(time.Second)
@@ -31,6 +31,84 @@ func main() {
 	// startGin()
 	// startServerV3()
 	// startServerV4()
+}
+
+func startOperateAPIs() {
+	router := gin.Default()
+	router.POST("/api/v5/operate/event", func(c *gin.Context) {
+		var data EventData
+		err := c.ShouldBindJSON(&data)
+
+		if err != nil {
+			fmt.Println("event : ", err)
+			c.JSON(500, gin.H{
+				"Code": 500,
+				"Msg":  err.Error(),
+			})
+			return
+		}
+
+		// TODO
+		fmt.Println("event : ", data)
+
+		c.JSON(http.StatusOK, "OK")
+	})
+
+	router.GET("/api/v5/operate/all", func(c *gin.Context) {
+		var data = OperateData{}
+		// FCC Token
+		fccToken := uniswapFCCToken()
+		if fccToken != (UniswapToken{}) {
+			fmt.Println("fccToken: ", fccToken)
+			data.Freechat.NowPrice = "0.0635"
+			data.Freechat.MarketValue = "100000000"
+			data.Freechat.MarketValueIncrease = "+4.4%"
+			data.Freechat.DayVolume = "1000000"
+			data.Freechat.DayVolumeIncrease = "+4.23%"
+			data.Freechat.FccUser = "1000000"
+			data.Freechat.FccUserIncrease = "+1.4%"
+			// TODO 转换返回值
+		}
+
+		// UserBigData
+		data.User = getUserBigData()
+
+		jsonBytes, err := json.Marshal(data)
+		if err != nil {
+			fmt.Println("struct to bytes err : ", err)
+		}
+
+		fmt.Println("resp : ", jsonBytes)
+		fmt.Println("resp 2: ", string(jsonBytes))
+		c.JSON(http.StatusOK, string(jsonBytes))
+
+	})
+
+	router.Run(":8081")
+}
+
+func onUserEvent() {
+	router := gin.Default()
+	router.POST("/api/v5/operate/event", func(c *gin.Context) {
+		var data EventData
+		err := c.ShouldBindJSON(&data)
+
+		if err != nil {
+			fmt.Println("event : ", err)
+			c.JSON(500, gin.H{
+				"Code": 500,
+				"Msg":  err.Error(),
+			})
+			return
+		}
+
+		// TODO
+		fmt.Println("event : ", data)
+
+		c.JSON(http.StatusOK, "OK")
+	})
+
+	router.Run(":8081")
 }
 
 func operateAllData() {
@@ -57,7 +135,7 @@ func operateAllData() {
 		c.JSON(http.StatusOK, string(jsonBytes))
 
 	})
-	router.Run(":8080")
+	router.Run(":8081")
 }
 
 /*
@@ -732,4 +810,19 @@ type Ad struct {
 type NFT struct {
 }
 type Game struct {
+}
+
+// 埋点事件
+type EventData struct {
+	UserId  string `json:"userId"`  // 用户
+	IP      string `json:"ip"`      // IP
+	Device  string `json:"device"`  // 设备
+	Os      string `json:"system"`  // 设备系统
+	Browser string `json:"browser"` // 浏览器
+
+	Page    string `json:"page"`    // 页面
+	Event   string `json:"event"`   // 事件
+	Action  string `json:"action"`  // 动作
+	Comment string `json:"comment"` // comment
+	Date    int    `json:"date"`    // 时间
 }
