@@ -3,6 +3,7 @@ package main
 import (
 	// "crypto/tls"
 
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -18,7 +20,8 @@ import (
 )
 
 func main() {
-	syncData()
+	// uniswapFCCToken()
+	operateAllData()
 	// startServer()
 	// now := time.Now().UnixNano()
 	// time.Sleep(time.Second)
@@ -30,12 +33,107 @@ func main() {
 	// startServerV4()
 }
 
+func operateAllData() {
+	router := gin.Default()
+	router.GET("/api/v5/operate/all", func(c *gin.Context) {
+		var data = OperateData{}
+		fccToken := uniswapFCCToken()
+		if fccToken != (UniswapToken{}) {
+			fmt.Println("fccToken: ", fccToken)
+			// TODO 转换返回值
+
+		}
+
+		jsonBytes, err := json.Marshal(data)
+		if err != nil {
+			fmt.Println("struct to bytes err : ", err)
+		}
+
+		fmt.Println("resp : ", jsonBytes)
+		fmt.Println("resp 2: ", string(jsonBytes))
+		c.JSON(http.StatusOK, string(jsonBytes))
+
+	})
+	router.Run(":8080")
+}
+
+/*
+* {"derivedETH":"0","feesUSD":"108.3979488349600340149325490092877","name":"Freechat Coin","poolCount":"0",
+* "symbol":"FCC","totalSupply":"28368","totalValueLocked":"199940134.57160359567214293","totalValueLockedUSD":"0",
+* "totalValueLockedUSDUntracked":"0","txCount":"108","untrackedVolumeUSD":"18066.32480582667233582209150154796",
+* "volume":"456421.018775415938823971","volumeUSD":"36132.6496116533446716441830030959","decimals":"18"}
+ */
+func uniswapFCCToken() UniswapToken {
+	// scurl := `'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3' \
+	//   -H 'authority: api.thegraph.com' \
+	//   -H 'accept: application/json, multipart/mixed' \
+	//   -H 'accept-language: zh-CN,zh;q=0.9' \
+	//   -H 'content-type: application/json' \
+	//   -H 'origin: https://api.thegraph.com' \
+	//   -H 'referer: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3/graphql?query=%7B%0A++token%28id%3A+%220x171b1daefac13a0a3524fcb6beddc7b31e58e079%22%29+%7B%0A++++decimals%0A++++derivedETH%0A++++feesUSD%0A++++name%0A++++poolCount%0A++%7D%0A%7D' \
+	//   -H 'sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"' \
+	//   -H 'sec-ch-ua-mobile: ?0' \
+	//   -H 'sec-ch-ua-platform: "macOS"' \
+	//   -H 'sec-fetch-dest: empty' \
+	//   -H 'sec-fetch-mode: cors' \
+	//   -H 'sec-fetch-site: same-origin' \
+	//   -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36' \
+	//   --data '{"query":"{\n  token(id: \"0x171b1daefac13a0a3524fcb6beddc7b31e58e079\") {\n    decimals\n    derivedETH\n    feesUSD\n    name\n    poolCount\n  }\n}","variables":null,"extensions":{"headers":null}}' \
+	//   --compressed`
+
+	// 	scurl := `curl 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3' \
+	//   -H 'authority: api.thegraph.com' \
+	//   -H 'accept: application/json, multipart/mixed' \
+	//   -H 'accept-language: zh-CN,zh;q=0.9' \
+	//   -H 'content-type: application/json' \
+	//   -H 'origin: https://api.thegraph.com' \
+	//   -H 'referer: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3/graphql?query=%7B%0A++token%28id%3A+%220x171b1daefac13a0a3524fcb6beddc7b31e58e079%22%29+%7B%0A++++decimals%0A++++derivedETH%0A++++feesUSD%0A++++name%0A++++poolCount%0A++%7D%0A%7D' \
+	//   -H 'sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"' \
+	//   -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36' \
+	//   --data-raw '{"query":"{\n  token(id: \"0x171b1daefac13a0a3524fcb6beddc7b31e58e079\") {\n    decimals\n    derivedETH\n    feesUSD\n    name\n    poolCount\n  }\n}","variables":null,"extensions":{"headers":null}}' \
+	//   --compressed`
+
+	cmd := exec.Command("sh", "./uniswap_fcc_token.sh") // chmod -R 777 Tokenlist (Permission failed)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout // 标准输出
+	cmd.Stderr = &stderr // 标准错误
+
+	var resp = UniswapResp{}
+	err := cmd.Run()
+	if err != nil {
+		log.Fatalf("cmd.Run() failed with", err)
+	}
+	outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
+
+	fmt.Println("outStr : ", outStr)
+	fmt.Println("errStr ：", errStr)
+
+	// json转结构体
+	uerr := json.Unmarshal(stdout.Bytes(), &resp)
+	if uerr != nil {
+		log.Fatalf("stdout-> UniswapToken err", uerr)
+	}
+	fmt.Println("fccToken : ", resp)
+
+	// 结构体转json
+	jsonBytes, err := json.Marshal(UniswapToken(resp.Data.Token))
+	if err != nil {
+		fmt.Println("struct to bytes err : ", err)
+	}
+	fmt.Println("UniswapToken: ", string(jsonBytes))
+
+	return UniswapToken(resp.Data.Token)
+	// TODO read data from Stdout and
+}
+
 func getInstIdTickerInfo(params string) *http.Response {
 
 	req, err := http.NewRequest("GET", "https://www.okex.com/api/v5/market/index-tickers?"+params, nil)
 	if err != nil {
 		// handle err
 		log.Printf("%+v", err)
+
 	}
 	req.Header.Set("Authority", "www.okex.com")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
@@ -520,4 +618,99 @@ type ResultRsp struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
 	Result  string `json:"result"`
+}
+
+// uniswap token struct
+type UniswapResp struct {
+	Data UniswapData `json:"data"`
+}
+type UniswapData struct {
+	Token Token `json:"token"`
+}
+
+type Token struct {
+	DerivedETH                   string `json:"derivedETH"`
+	FeesUSD                      string `json:"feesUSD"`
+	Name                         string `json:"name"`
+	PoolCount                    string `json:"poolCount"`
+	Symbol                       string `json:"symbol"`
+	TotalSupply                  string `json:"totalSupply"`
+	TotalValueLocked             string `json:"totalValueLocked"`
+	TotalValueLockedUSD          string `json:"totalValueLockedUSD"`
+	TotalValueLockedUSDUntracked string `json:"totalValueLockedUSDUntracked"`
+	TxCount                      string `json:"txCount"`
+	UntrackedVolumeUSD           string `json:"untrackedVolumeUSD"`
+	Volume                       string `json:"volume"`
+	VolumeUSD                    string `json:"volumeUSD"`
+	Decimals                     string `json:"decimals"`
+}
+
+type UniswapToken struct {
+	DerivedETH                   string `json:"derivedETH"`
+	FeesUSD                      string `json:"feesUSD"`
+	Name                         string `json:"name"`
+	PoolCount                    string `json:"poolCount"`
+	Symbol                       string `json:"symbol"`
+	TotalSupply                  string `json:"totalSupply"`
+	TotalValueLocked             string `json:"totalValueLocked"`
+	TotalValueLockedUSD          string `json:"totalValueLockedUSD"`
+	TotalValueLockedUSDUntracked string `json:"totalValueLockedUSDUntracked"`
+	TxCount                      string `json:"txCount"`
+	UntrackedVolumeUSD           string `json:"untrackedVolumeUSD"`
+	Volume                       string `json:"volume"`
+	VolumeUSD                    string `json:"volumeUSD"`
+	Decimals                     string `json:"decimals"`
+}
+
+// uniswap token struct
+type OperateData struct {
+	Freechat  Freechat  `json:"freechat"`
+	User      User      `json:"user"`
+	FPay      FPay      `json:"FPay"`
+	ECommerce ECommerce `json:"eCommerce"`
+	Ad        Ad        `json:"ad"`
+	NFT       NFT       `json:"NFT"`
+	Game      Game      `json:"game"`
+}
+
+type Freechat struct {
+	TotalEarn           string `json:"totalEarn"`
+	DayEarn             string `json:"dayEarn"`
+	DayEarnIncrease     string `json:"dayEarnIncrease"`
+	WeekEarn            string `json:"weekEarn"`
+	WeekEarnIncrease    string `json:"weekEarnIncrease"`
+	MonthEarn           string `json:"monthEarn"`
+	MonthEarnIncrease   string `json:"monthEarnIncrease"`
+	NowPrice            string `json:"nowPrice"`
+	MarketValue         string `json:"marketValue"`
+	MarketValueIncrease string `json:"marketValueIncrease"`
+	DayVolume           string `json:"dayVolume"`
+	DayVolumeIncrease   string `json:"dayVolumeIncrease"`
+	FccUser             string `json:"fccUser"`
+	FccUserIncrease     string `json:"fccUserIncrease"`
+	TotalProfit         string `json:"totalProfit"`
+	WaitProfit          string `json:"waitProfit"`
+	PerFccProfit        string `json:"perFccProfit"`
+	PledgeProfit        string `json:"pledgeProfit"`
+	PledgeRate          string `json:"pledgeRate"`
+}
+type User struct {
+	Total               int    `json:"total"`
+	DayIncrease         string `json:"dayIncrease"`
+	DayActive           int    `json:"dayActive"`
+	DayActiveIncrease   string `json:"dayActiveIncrease"`
+	WeekActive          int    `json:"weekActive"`
+	WeekActiveIncrease  string `json:"weekActiveIncrease"`
+	MonthActive         int    `json:"monthActive"`
+	MonthActiveIncrease string `json:"monthActiveIncrease"`
+}
+type FPay struct {
+}
+type ECommerce struct {
+}
+type Ad struct {
+}
+type NFT struct {
+}
+type Game struct {
 }

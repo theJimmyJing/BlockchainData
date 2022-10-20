@@ -1,0 +1,16 @@
+  curl 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3' \
+  -H 'authority: api.thegraph.com' \
+  -H 'accept: application/json, multipart/mixed' \
+  -H 'accept-language: zh-CN,zh;q=0.9' \
+  -H 'content-type: application/json' \
+  -H 'origin: https://api.thegraph.com' \
+  -H 'referer: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3/graphql?query=%7B%0A++token%28id%3A+%220x171b1daefac13a0a3524fcb6beddc7b31e58e079%22%29+%7B%0A++++derivedETH%0A++++feesUSD%0A++++name%0A++++poolCount%0A++++symbol%0A++++totalSupply%0A++++totalValueLocked%0A++++totalValueLockedUSD%0A++++totalValueLockedUSDUntracked%0A++++txCount%0A++++untrackedVolumeUSD%0A++++volume%0A++++volumeUSD%0A++++decimals%0A++%7D%0A%7D' \
+  -H 'sec-ch-ua: "Chromium";v="106", "Google Chrome";v="106", "Not;A=Brand";v="99"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36' \
+  --data-raw '{"query":"{\n  token(id: \"0x171b1daefac13a0a3524fcb6beddc7b31e58e079\") {\n    derivedETH\n    feesUSD\n    name\n    poolCount\n    symbol\n    totalSupply\n    totalValueLocked\n    totalValueLockedUSD\n    totalValueLockedUSDUntracked\n    txCount\n    untrackedVolumeUSD\n    volume\n    volumeUSD\n    decimals\n  }\n}","variables":null,"extensions":{"headers":null}}' \
+  --compressed
