@@ -22,13 +22,15 @@ import (
 func main() {
 	startOperateAPIs()
 
+	// uniswapFCCToken()
+	// operateAllData()
 	// startServer()
 	// now := time.Now().UnixNano()
 	// time.Sleep(time.Second)
 	// now2 := time.Now().UnixNano()
 	// fmt.Println(now2 - now)
 
-	// startGin()
+	startGin()
 	// startServerV3()
 	// startServerV4()
 }
