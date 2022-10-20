@@ -37,12 +37,15 @@ func operateAllData() {
 	router := gin.Default()
 	router.GET("/api/v5/operate/all", func(c *gin.Context) {
 		var data = OperateData{}
+		// FCC Token
 		fccToken := uniswapFCCToken()
 		if fccToken != (UniswapToken{}) {
 			fmt.Println("fccToken: ", fccToken)
 			// TODO 转换返回值
-
 		}
+
+		// UserBigData
+		data.User = getUserBigData()
 
 		jsonBytes, err := json.Marshal(data)
 		if err != nil {
@@ -125,6 +128,22 @@ func uniswapFCCToken() UniswapToken {
 
 	return UniswapToken(resp.Data.Token)
 	// TODO read data from Stdout and
+}
+
+func getUserBigData() UserBigData {
+	// TEST data
+	// TODO
+	var data = UserBigData{}
+	data.Total = 100000
+	data.DayIncrease = 200
+	data.DayActive = 10000
+	data.DayActiveIncrease24H = 1000
+	data.MonthActive = 10000
+	data.MonthActiveIncrease24H = 1000
+	data.WeekActive = 10000
+	data.WeekActiveIncrease24H = 1000
+
+	return data
 }
 
 func getInstIdTickerInfo(params string) *http.Response {
@@ -664,13 +683,13 @@ type UniswapToken struct {
 
 // uniswap token struct
 type OperateData struct {
-	Freechat  Freechat  `json:"freechat"`
-	User      User      `json:"user"`
-	FPay      FPay      `json:"FPay"`
-	ECommerce ECommerce `json:"eCommerce"`
-	Ad        Ad        `json:"ad"`
-	NFT       NFT       `json:"NFT"`
-	Game      Game      `json:"game"`
+	Freechat  Freechat    `json:"freechat"`
+	User      UserBigData `json:"user"`
+	FPay      FPay        `json:"FPay"`
+	ECommerce ECommerce   `json:"eCommerce"`
+	Ad        Ad          `json:"ad"`
+	NFT       NFT         `json:"NFT"`
+	Game      Game        `json:"game"`
 }
 
 type Freechat struct {
@@ -694,15 +713,15 @@ type Freechat struct {
 	PledgeProfit        string `json:"pledgeProfit"`
 	PledgeRate          string `json:"pledgeRate"`
 }
-type User struct {
-	Total               int    `json:"total"`
-	DayIncrease         string `json:"dayIncrease"`
-	DayActive           int    `json:"dayActive"`
-	DayActiveIncrease   string `json:"dayActiveIncrease"`
-	WeekActive          int    `json:"weekActive"`
-	WeekActiveIncrease  string `json:"weekActiveIncrease"`
-	MonthActive         int    `json:"monthActive"`
-	MonthActiveIncrease string `json:"monthActiveIncrease"`
+type UserBigData struct {
+	Total                  int `json:"total"`
+	DayIncrease            int `json:"dayIncrease"`
+	DayActive              int `json:"dayActive"`
+	DayActiveIncrease24H   int `json:"dayActiveIncrease"`
+	WeekActive             int `json:"weekActive"`
+	WeekActiveIncrease24H  int `json:"weekActiveIncrease"`
+	MonthActive            int `json:"monthActive"`
+	MonthActiveIncrease24H int `json:"monthActiveIncrease"`
 }
 type FPay struct {
 }
