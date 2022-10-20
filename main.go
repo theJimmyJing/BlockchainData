@@ -20,8 +20,8 @@ import (
 )
 
 func main() {
-	uniswapFCCToken()
-	// operateAllData()
+	// uniswapFCCToken()
+	operateAllData()
 	// startServer()
 	// now := time.Now().UnixNano()
 	// time.Sleep(time.Second)
