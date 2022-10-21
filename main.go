@@ -476,12 +476,15 @@ func startGin() {
 		data.User = getUserBigData()
 
 		jsonBytes, err := json.Marshal(data)
-		if err != nil {
-			fmt.Println("struct to bytes err : ", err)
-		}
 
-		fmt.Println("resp 2: ", string(jsonBytes))
-		c.JSON(http.StatusOK, string(jsonBytes))
+		if err != nil {
+			fmt.Println("operate/all  struct to bytes err : ", err)
+		}
+		var result map[string]interface{}
+		json.Unmarshal(jsonBytes, &result)
+
+		fmt.Println("operate/all : ", result)
+		c.JSON(http.StatusOK, result)
 
 	})
 	router.Run(":8080")
