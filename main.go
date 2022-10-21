@@ -31,11 +31,26 @@ func main() {
 	// now2 := time.Now().UnixNano()
 	// fmt.Println(now2 - now)
 
+	// testEvent()
 	startGin()
 	// startServerV3()
 	// startServerV4()
 
 	// conneRedis()
+}
+
+// 测试埋点存储和查询
+func TestEvent() {
+	var redisClient = connectRedis()
+
+	eventData := EventData{}
+	eventData.Event = "active"
+	eventData.Date = strconv.FormatInt((time.Now().UnixNano() / 1e6), 10) // 时间戳
+
+	saveEventData(eventData)
+
+	count := GetDayActiveCount(redisClient, 0)
+	fmt.Println("count ", count)
 }
 
 func onUserEvent() {
@@ -103,7 +118,7 @@ func saveEventData(newEvent EventData) {
 		if infoErrorStatus != nil {
 			fmt.Println("save failed：", infoErrorStatus)
 		} else {
-			fmt.Println("save success", newEvent)
+			fmt.Println("save success", eventKey, newEvent.Date)
 		}
 	}
 }
@@ -232,11 +247,13 @@ func getUserBigData() UserBigData {
 }
 
 func connectRedis() *redis.Client {
-	var redisClient = redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
-		Password: "",
-		DB:       0,
-	})
+	if redisClient == nil {
+		redisClient = redis.NewClient(&redis.Options{
+			Addr:     "127.0.0.1:6379",
+			Password: "",
+			DB:       0,
+		})
+	}
 	return redisClient
 }
 
@@ -246,13 +263,13 @@ func DayActiveCount(redisClient *redis.Client, day string) int {
 	var dataCache []string
 	getInfo, getinfoErr := redisClient.Get(eventKey).Result()
 	if getinfoErr != nil {
-		fmt.Println("getDayActive no data", getinfoErr)
+		fmt.Println("getDayActive no data", eventKey, getinfoErr)
 		return 0
 	} else {
 		//获取到json字符串,反序列化,原来是二维数组的,反序列化的时候也要用二维数组接收
 		unmarsha1Err := json.Unmarshal([]byte(getInfo), &dataCache)
 		if unmarsha1Err != nil {
-			fmt.Println("getDayActive failed:", unmarsha1Err)
+			fmt.Println("getDayActive failed:", eventKey, unmarsha1Err)
 			return 0
 		} else {
 			return len(dataCache)
@@ -263,7 +280,7 @@ func DayActiveCount(redisClient *redis.Client, day string) int {
 // 获取某周的开始和结束时间,0 为当天,-1昨天，1明天以此类推
 func GetDayActiveCount(redisClient *redis.Client, dayOffset int) int {
 	now := time.Now()
-	day := now.AddDate(0, 0, dayOffset).Format("2006-01-02")
+	day := now.AddDate(0, 0, dayOffset).Format("20060102")
 
 	return DayActiveCount(redisClient, day)
 }
@@ -285,7 +302,7 @@ func GetWeekActiveCount(redisClient *redis.Client, week int) int {
 	// endTime = thisWeek.AddDate(0, 0, offset+6+7*week).Format("2006-01-02") + " 23:59:59"
 
 	for i := 0; i < 7; i++ {
-		day := thisWeek.AddDate(0, 0, offset+i+7*week).Format("2006-01-02")
+		day := thisWeek.AddDate(0, 0, offset+i+7*week).Format("20060102")
 		weekActiveCount += DayActiveCount(redisClient, day)
 	}
 
@@ -976,5 +993,5 @@ type EventData struct {
 	Event   string `json:"event"`   // 事件
 	Action  string `json:"action"`  // 动作
 	Comment string `json:"comment"` // comment
-	Date    int    `json:"date"`    // 时间
+	Date    string `json:"date"`    // 时间
 }
