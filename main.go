@@ -39,6 +39,36 @@ func main() {
 	// conneRedis()
 }
 
+// 获取FCC U价格, 总价格 18位精度
+func GetFccUPrice() (string, string) {
+	// USDT -> FCC
+	url := "https://api.1inch.io/v4.0/1/quote?fromTokenAddress=0xdac17f958d2ee523a2206206994597c13d831ec7&toTokenAddress=0x171b1daefac13a0a3524fcb6beddc7b31e58e079&amount=100000"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("GetFccPrice url new err ", err)
+		return "0", "0"
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		// handle err
+		log.Default().Printf("GetFccPrice Do err : ", err)
+		return "0", "0"
+	}
+
+	var data = Transtation1inch{}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err == nil {
+		err = json.Unmarshal(body, &data)
+	}
+	usdtAmount, err := strconv.ParseFloat(data.FromTokenAmount, 64)
+	fccAmount, err := strconv.ParseFloat(data.ToTokenAmount, 64)
+	price := usdtAmount / fccAmount
+	totalPrice := 100000000 * price
+
+	return strconv.FormatFloat(price, 'f', 18, 64), strconv.FormatFloat(totalPrice, 'f', 8, 64)
+}
+
 // 测试埋点存储和查询
 func TestEvent() {
 	var redisClient = connectRedis()
@@ -277,13 +307,11 @@ func DayActiveCount(redisClient *redis.Client, day string) int {
 	var dataCache []string
 	getInfo, getinfoErr := redisClient.Get(eventKey).Result()
 	if getinfoErr != nil {
-		fmt.Println("getDayActive no data", eventKey, getinfoErr)
 		return 0
 	} else {
 		//获取到json字符串,反序列化,原来是二维数组的,反序列化的时候也要用二维数组接收
 		unmarsha1Err := json.Unmarshal([]byte(getInfo), &dataCache)
 		if unmarsha1Err != nil {
-			fmt.Println("getDayActive failed:", eventKey, unmarsha1Err)
 			return 0
 		} else {
 			return len(dataCache)
@@ -602,34 +630,37 @@ func startGin() {
 	router.GET("/api/v5/operate/all", func(c *gin.Context) {
 		var data = OperateData{}
 		// FCC Token
-		fccToken := uniswapFCCToken()
-		if fccToken != (UniswapToken{}) {
-			fmt.Println("fccToken: ", fccToken)
+		// fccToken := uniswapFCCToken()
+		// if fccToken != (UniswapToken{}) {
+		// 	fmt.Println("fccToken: ", fccToken)
 
-			data.Freechat.TotalEarn = "12312321"
-			data.Freechat.DayEarn = "2131"
-			data.Freechat.DayEarnIncrease = "+15.4%"
-			data.Freechat.WeekEarn = "10232"
-			data.Freechat.WeekEarnIncrease = "14.23%"
-			data.Freechat.MonthEarn = "31232"
-			data.Freechat.MonthEarnIncrease = "12.4%"
+		data.Freechat.TotalEarn = "12312321"
+		data.Freechat.DayEarn = "2131"
+		data.Freechat.DayEarnIncrease = "+15.4%"
+		data.Freechat.WeekEarn = "10232"
+		data.Freechat.WeekEarnIncrease = "14.23%"
+		data.Freechat.MonthEarn = "31232"
+		data.Freechat.MonthEarnIncrease = "12.4%"
 
-			data.Freechat.NowPrice = "0.0635"
-			data.Freechat.MarketValue = "100000000"
-			data.Freechat.MarketValueIncrease = "+4.4%"
-			data.Freechat.DayVolume = "10000"
-			data.Freechat.DayVolumeIncrease = "4.23%"
-			data.Freechat.FccUser = "1000000"
-			data.Freechat.FccUserIncrease = "1.4%"
+		data.Freechat.NowPrice = "0.0635"
+		data.Freechat.MarketValue = "1000000000"
+		data.Freechat.MarketValueIncrease = "+4.4%"
+		data.Freechat.DayVolume = "10000"
+		data.Freechat.DayVolumeIncrease = "4.23%"
+		data.Freechat.FccUser = "1000000"
+		data.Freechat.FccUserIncrease = "1.4%"
 
-			data.Freechat.TotalProfit = "5231212"
-			data.Freechat.WaitProfit = "131232"
-			data.Freechat.PerFccProfit = "5.23%"
-			data.Freechat.PledgeProfit = "5.3"
-			data.Freechat.PledgeRate = "3.2%"
+		data.Freechat.TotalProfit = "5231212"
+		data.Freechat.WaitProfit = "131232"
+		data.Freechat.PerFccProfit = "5.23%"
+		data.Freechat.PledgeProfit = "5.3"
+		data.Freechat.PledgeRate = "3.2%"
 
-			// TODO 转换返回值
-		}
+		// 	// TODO 转换返回值
+		// }
+		data.Freechat.NowPrice, data.Freechat.MarketValue = GetFccUPrice()
+
+		fmt.Println("GetFccUPrice 2: ", data.Freechat.NowPrice)
 
 		// UserBigData - 读取用户日活等数据
 		data.User = getUserBigData()
@@ -639,7 +670,6 @@ func startGin() {
 			fmt.Println("struct to bytes err : ", err)
 		}
 
-		fmt.Println("resp : ", jsonBytes)
 		fmt.Println("resp 2: ", string(jsonBytes))
 		c.JSON(http.StatusOK, string(jsonBytes))
 
@@ -1008,4 +1038,9 @@ type EventData struct {
 	Action  string `json:"action"`  // 动作
 	Comment string `json:"comment"` // comment
 	Date    string `json:"date"`    // 时间
+}
+
+type Transtation1inch struct {
+	ToTokenAmount   string `json:"toTokenAmount"`
+	FromTokenAmount string `json:"fromTokenAmount"`
 }
