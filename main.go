@@ -16,12 +16,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v7"
 	"github.com/kirinlabs/HttpRequest"
 )
 
-func main() {
-	startOperateAPIs()
+var redisClient *redis.Client
 
+func main() {
 	// uniswapFCCToken()
 	// operateAllData()
 	// startServer()
@@ -33,67 +34,15 @@ func main() {
 	startGin()
 	// startServerV3()
 	// startServerV4()
-}
 
-func startOperateAPIs() {
-	router := gin.Default()
-	router.POST("/api/v5/operate/event", func(c *gin.Context) {
-		var data EventData
-		err := c.ShouldBindJSON(&data)
-
-		if err != nil {
-			fmt.Println("event : ", err)
-			c.JSON(500, gin.H{
-				"Code": 500,
-				"Msg":  err.Error(),
-			})
-			return
-		}
-
-		// TODO
-		fmt.Println("event : ", data)
-
-		c.JSON(http.StatusOK, "OK")
-	})
-
-	router.GET("/api/v5/operate/all", func(c *gin.Context) {
-		var data = OperateData{}
-		// FCC Token
-		fccToken := uniswapFCCToken()
-		if fccToken != (UniswapToken{}) {
-			fmt.Println("fccToken: ", fccToken)
-			data.Freechat.NowPrice = "0.0635"
-			data.Freechat.MarketValue = "100000000"
-			data.Freechat.MarketValueIncrease = "+4.4%"
-			data.Freechat.DayVolume = "1000000"
-			data.Freechat.DayVolumeIncrease = "+4.23%"
-			data.Freechat.FccUser = "1000000"
-			data.Freechat.FccUserIncrease = "+1.4%"
-			// TODO 转换返回值
-		}
-
-		// UserBigData
-		data.User = getUserBigData()
-
-		jsonBytes, err := json.Marshal(data)
-		if err != nil {
-			fmt.Println("struct to bytes err : ", err)
-		}
-
-		fmt.Println("resp : ", jsonBytes)
-		fmt.Println("resp 2: ", string(jsonBytes))
-		c.JSON(http.StatusOK, string(jsonBytes))
-
-	})
-
-	router.Run(":8081")
+	// conneRedis()
 }
 
 func onUserEvent() {
 	router := gin.Default()
 	router.POST("/api/v5/operate/event", func(c *gin.Context) {
-		var data EventData
-		err := c.ShouldBindJSON(&data)
+		var newEvent EventData
+		err := c.ShouldBindJSON(&newEvent)
 
 		if err != nil {
 			fmt.Println("event : ", err)
@@ -104,13 +53,59 @@ func onUserEvent() {
 			return
 		}
 
-		// TODO
-		fmt.Println("event : ", data)
+		// 存储event
+		saveEventData(newEvent)
 
 		c.JSON(http.StatusOK, "OK")
 	})
 
 	router.Run(":8081")
+}
+
+func saveEventData(newEvent EventData) {
+	var redisClient = redis.NewClient(&redis.Options{
+		Addr:     "127.0.0.1:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	currentTime := time.Now()
+	dayTime := currentTime.Format("20060102")
+	eventKey := newEvent.Event + "_" + dayTime // 埋点事件存储格式： KEY（event_日期），data
+
+	var dataCache []string
+	getInfo, getinfoErr := redisClient.Get(eventKey).Result()
+	if getinfoErr != nil {
+		fmt.Println("没有获取到数据", getinfoErr)
+	} else {
+		//获取到json字符串,反序列化,原来是二维数组的,反序列化的时候也要用二维数组接收
+		unmarsha1Err := json.Unmarshal([]byte(getInfo), &dataCache)
+		if unmarsha1Err != nil {
+			fmt.Println("反序列化失败:", unmarsha1Err)
+		} else {
+			fmt.Println(dataCache)
+		}
+	}
+
+	// 结构体转json
+	jsonBytes, err := json.Marshal(newEvent)
+	if err != nil {
+		fmt.Println("struct to bytes err : ", err)
+		return
+	}
+	// 添加到数组
+	dataCache = append(dataCache, string(jsonBytes))
+
+	infoByte, infoError := json.Marshal(dataCache) // 数组转bytes
+	if infoError == nil {
+		inforString := string(infoByte)                                    //转换成字符串
+		infoErrorStatus := redisClient.Set(eventKey, inforString, 0).Err() //设置过期时间- 不过期
+		if infoErrorStatus != nil {
+			fmt.Println("save failed：", infoErrorStatus)
+		} else {
+			fmt.Println("save success", newEvent)
+		}
+	}
 }
 
 func operateAllData() {
@@ -200,7 +195,7 @@ func uniswapFCCToken() UniswapToken {
 	fmt.Println("fccToken : ", resp)
 
 	// 结构体转json
-	jsonBytes, err := json.Marshal(UniswapToken(resp.Data.Token))
+	jsonBytes, err := json.Marshal(resp.Data.Token)
 	if err != nil {
 		fmt.Println("struct to bytes err : ", err)
 	}
@@ -211,19 +206,105 @@ func uniswapFCCToken() UniswapToken {
 }
 
 func getUserBigData() UserBigData {
-	// TEST data
-	// TODO
+
+	var redisClient = connectRedis()
+	day1 := GetDayActiveCount(redisClient, -1)
+	day2 := GetDayActiveCount(redisClient, -1)
+	week1 := GetWeekActiveCount(redisClient, -1)
+	week2 := GetWeekActiveCount(redisClient, -2)
+	month1 := GetMonthActiveCount(redisClient, -1)
+	month2 := GetMonthActiveCount(redisClient, -2)
+
+	fmt.Println("count: ", day1, day2, week1, week2, month1, month2)
+
 	var data = UserBigData{}
-	data.Total = 100000
+
+	data.Total = 10000
 	data.DayIncrease = 200
-	data.DayActive = 10000
-	data.DayActiveIncrease24H = 1000
-	data.MonthActive = 10000
-	data.MonthActiveIncrease24H = 1000
-	data.WeekActive = 10000
-	data.WeekActiveIncrease24H = 1000
+	data.DayActive = day1
+	data.DayActiveIncrease24H = day1 - day2
+	data.WeekActive = week1
+	data.WeekActiveIncrease24H = week1 - week2
+	data.MonthActive = month1
+	data.MonthActiveIncrease24H = month1 - month2
 
 	return data
+}
+
+func connectRedis() *redis.Client {
+	var redisClient = redis.NewClient(&redis.Options{
+		Addr:     "127.0.0.1:6379",
+		Password: "",
+		DB:       0,
+	})
+	return redisClient
+}
+
+// day格式20220601
+func DayActiveCount(redisClient *redis.Client, day string) int {
+	eventKey := "active_" + day
+	var dataCache []string
+	getInfo, getinfoErr := redisClient.Get(eventKey).Result()
+	if getinfoErr != nil {
+		fmt.Println("getDayActive no data", getinfoErr)
+		return 0
+	} else {
+		//获取到json字符串,反序列化,原来是二维数组的,反序列化的时候也要用二维数组接收
+		unmarsha1Err := json.Unmarshal([]byte(getInfo), &dataCache)
+		if unmarsha1Err != nil {
+			fmt.Println("getDayActive failed:", unmarsha1Err)
+			return 0
+		} else {
+			return len(dataCache)
+		}
+	}
+}
+
+// 获取某周的开始和结束时间,0 为当天,-1昨天，1明天以此类推
+func GetDayActiveCount(redisClient *redis.Client, dayOffset int) int {
+	now := time.Now()
+	day := now.AddDate(0, 0, dayOffset).Format("2006-01-02")
+
+	return DayActiveCount(redisClient, day)
+}
+
+// xx周的周活
+// 获取某周的开始和结束时间,week为0本周,-1上周，1下周以此类推
+func GetWeekActiveCount(redisClient *redis.Client, week int) int {
+	weekActiveCount := 0
+
+	now := time.Now()
+	offset := int(time.Monday - now.Weekday())
+	//周日做特殊判断 因为time.Monday = 0
+	if offset > 0 {
+		offset = -6
+	}
+	year, month, day := now.Date()
+	thisWeek := time.Date(year, month, day, 0, 0, 0, 0, time.Local)
+	// startTime = thisWeek.AddDate(0, 0, offset+7*week).Format("2006-01-02") + " 00:00:00"
+	// endTime = thisWeek.AddDate(0, 0, offset+6+7*week).Format("2006-01-02") + " 23:59:59"
+
+	for i := 0; i < 7; i++ {
+		day := thisWeek.AddDate(0, 0, offset+i+7*week).Format("2006-01-02")
+		weekActiveCount += DayActiveCount(redisClient, day)
+	}
+
+	return weekActiveCount
+}
+
+// 月活数 week为0本月,-1上月，1下月以此类推
+func GetMonthActiveCount(redisClient *redis.Client, monthOffset int) int {
+	monthActiveCount := 0
+
+	year, month, _ := time.Now().Date()
+	thisMonth := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
+	monLastDay := thisMonth.AddDate(0, monthOffset+1, -1)
+	for i := 0; i < monLastDay.Day(); i++ {
+		day := thisMonth.AddDate(0, monthOffset, i).Format("20060102")
+		monthActiveCount += DayActiveCount(redisClient, day)
+	}
+
+	return monthActiveCount
 }
 
 func getInstIdTickerInfo(params string) *http.Response {
@@ -463,6 +544,74 @@ func startGin() {
 
 		c.JSON(http.StatusOK, result)
 		return
+	})
+
+	// 埋点事件
+	router.POST("/api/v5/operate/event", func(c *gin.Context) {
+		var data EventData
+		err := c.ShouldBindJSON(&data)
+
+		if err != nil {
+			fmt.Println("event : ", err)
+			c.JSON(500, gin.H{
+				"Code": 500,
+				"Msg":  err.Error(),
+			})
+			return
+		}
+
+		// TODO 事件埋入redis
+
+		fmt.Println("event : ", data)
+
+		c.JSON(http.StatusOK, "OK")
+	})
+
+	// 运营数据
+	router.GET("/api/v5/operate/all", func(c *gin.Context) {
+		var data = OperateData{}
+		// FCC Token
+		fccToken := uniswapFCCToken()
+		if fccToken != (UniswapToken{}) {
+			fmt.Println("fccToken: ", fccToken)
+
+			data.Freechat.TotalEarn = "12312321"
+			data.Freechat.DayEarn = "2131"
+			data.Freechat.DayEarnIncrease = "+15.4%"
+			data.Freechat.WeekEarn = "10232"
+			data.Freechat.WeekEarnIncrease = "14.23%"
+			data.Freechat.MonthEarn = "31232"
+			data.Freechat.MonthEarnIncrease = "12.4%"
+
+			data.Freechat.NowPrice = "0.0635"
+			data.Freechat.MarketValue = "100000000"
+			data.Freechat.MarketValueIncrease = "+4.4%"
+			data.Freechat.DayVolume = "10000"
+			data.Freechat.DayVolumeIncrease = "4.23%"
+			data.Freechat.FccUser = "1000000"
+			data.Freechat.FccUserIncrease = "1.4%"
+
+			data.Freechat.TotalProfit = "5231212"
+			data.Freechat.WaitProfit = "131232"
+			data.Freechat.PerFccProfit = "5.23%"
+			data.Freechat.PledgeProfit = "5.3"
+			data.Freechat.PledgeRate = "3.2%"
+
+			// TODO 转换返回值
+		}
+
+		// UserBigData - 读取用户日活等数据
+		data.User = getUserBigData()
+
+		jsonBytes, err := json.Marshal(data)
+		if err != nil {
+			fmt.Println("struct to bytes err : ", err)
+		}
+
+		fmt.Println("resp : ", jsonBytes)
+		fmt.Println("resp 2: ", string(jsonBytes))
+		c.JSON(http.StatusOK, string(jsonBytes))
+
 	})
 	router.Run(":8080")
 }
@@ -792,6 +941,7 @@ type Freechat struct {
 	PerFccProfit        string `json:"perFccProfit"`
 	PledgeProfit        string `json:"pledgeProfit"`
 	PledgeRate          string `json:"pledgeRate"`
+	// 少了1对
 }
 type UserBigData struct {
 	Total                  int `json:"total"`
