@@ -230,6 +230,20 @@ func getUserBigData() UserBigData {
 	month1 := GetMonthActiveCount(redisClient, -1)
 	month2 := GetMonthActiveCount(redisClient, -2)
 
+	// TODO remove for test
+	if day1 < 50 {
+		day1 = 100
+		day2 = 80
+	}
+	if week1 < 100 {
+		day1 = 300
+		day2 = 200
+	}
+	if month1 < 200 {
+		month1 = 500
+		month2 = 300
+	}
+
 	fmt.Println("count: ", day1, day2, week1, week2, month1, month2)
 
 	var data = UserBigData{}
