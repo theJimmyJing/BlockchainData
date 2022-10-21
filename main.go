@@ -69,44 +69,6 @@ func GetFccUPrice() (string, string) {
 	return strconv.FormatFloat(price, 'f', 18, 64), strconv.FormatFloat(totalPrice, 'f', 8, 64)
 }
 
-// 测试埋点存储和查询
-func TestEvent() {
-	var redisClient = connectRedis()
-
-	eventData := EventData{}
-	eventData.Event = "active"
-	eventData.Date = strconv.FormatInt((time.Now().UnixNano() / 1e6), 10) // 时间戳
-
-	saveEventData(eventData)
-
-	count := GetDayActiveCount(redisClient, 0)
-	fmt.Println("count ", count)
-}
-
-func onUserEvent() {
-	router := gin.Default()
-	router.POST("/api/v5/operate/event", func(c *gin.Context) {
-		var newEvent EventData
-		err := c.ShouldBindJSON(&newEvent)
-
-		if err != nil {
-			fmt.Println("event : ", err)
-			c.JSON(500, gin.H{
-				"Code": 500,
-				"Msg":  err.Error(),
-			})
-			return
-		}
-
-		// 存储event
-		saveEventData(newEvent)
-
-		c.JSON(http.StatusOK, "OK")
-	})
-
-	router.Run(":8081")
-}
-
 func saveEventData(newEvent EventData) {
 	var redisClient = redis.NewClient(&redis.Options{
 		Addr:     "127.0.0.1:6379",
@@ -121,7 +83,7 @@ func saveEventData(newEvent EventData) {
 	var dataCache []string
 	getInfo, getinfoErr := redisClient.Get(eventKey).Result()
 	if getinfoErr != nil {
-		fmt.Println("没有获取到数据", getinfoErr)
+		fmt.Println("no data", getinfoErr)
 	} else {
 		//获取到json字符串,反序列化,原来是二维数组的,反序列化的时候也要用二维数组接收
 		unmarsha1Err := json.Unmarshal([]byte(getInfo), &dataCache)
@@ -611,7 +573,7 @@ func startGin() {
 		err := c.ShouldBindJSON(&data)
 
 		if err != nil {
-			fmt.Println("event : ", err)
+			fmt.Println("Event parse Err : ", err)
 			c.JSON(500, gin.H{
 				"Code": 500,
 				"Msg":  err.Error(),
@@ -619,9 +581,8 @@ func startGin() {
 			return
 		}
 
-		// TODO 事件埋入redis
-
-		fmt.Println("event : ", data)
+		// 事件埋入redis
+		saveEventData(data)
 
 		c.JSON(http.StatusOK, "OK")
 	})
