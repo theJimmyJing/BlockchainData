@@ -16,11 +16,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v7"
 	"github.com/kirinlabs/HttpRequest"
 )
-
-var redisClient *redis.Client
 
 func main() {
 	// uniswapFCCToken()
@@ -56,7 +53,7 @@ func GetFccUPrice() (string, string) {
 		return "0", "0"
 	}
 
-	var data = Transtation1inch{}
+	var data = Price1inch{}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err == nil {
 		err = json.Unmarshal(body, &data)
@@ -67,79 +64,6 @@ func GetFccUPrice() (string, string) {
 	totalPrice := 100000000 * price
 
 	return strconv.FormatFloat(price, 'f', 18, 64), strconv.FormatFloat(totalPrice, 'f', 8, 64)
-}
-
-func saveEventData(newEvent EventData) {
-	var redisClient = redis.NewClient(&redis.Options{
-		Addr:     "127.0.0.1:6379",
-		Password: "",
-		DB:       0,
-	})
-
-	currentTime := time.Now()
-	dayTime := currentTime.Format("20060102")
-	eventKey := newEvent.Event + "_" + dayTime // 埋点事件存储格式： KEY（event_日期），data
-
-	var dataCache []string
-	getInfo, getinfoErr := redisClient.Get(eventKey).Result()
-	if getinfoErr != nil {
-		fmt.Println("no data", getinfoErr)
-	} else {
-		//获取到json字符串,反序列化,原来是二维数组的,反序列化的时候也要用二维数组接收
-		unmarsha1Err := json.Unmarshal([]byte(getInfo), &dataCache)
-		if unmarsha1Err != nil {
-			fmt.Println("反序列化失败:", unmarsha1Err)
-		} else {
-			fmt.Println(dataCache)
-		}
-	}
-
-	// 结构体转json
-	jsonBytes, err := json.Marshal(newEvent)
-	if err != nil {
-		fmt.Println("struct to bytes err : ", err)
-		return
-	}
-	// 添加到数组
-	dataCache = append(dataCache, string(jsonBytes))
-
-	infoByte, infoError := json.Marshal(dataCache) // 数组转bytes
-	if infoError == nil {
-		inforString := string(infoByte)                                    //转换成字符串
-		infoErrorStatus := redisClient.Set(eventKey, inforString, 0).Err() //设置过期时间- 不过期
-		if infoErrorStatus != nil {
-			fmt.Println("save failed：", infoErrorStatus)
-		} else {
-			fmt.Println("save success", eventKey, newEvent.Date)
-		}
-	}
-}
-
-func operateAllData() {
-	router := gin.Default()
-	router.GET("/api/v5/operate/all", func(c *gin.Context) {
-		var data = OperateData{}
-		// FCC Token
-		fccToken := uniswapFCCToken()
-		if fccToken != (UniswapToken{}) {
-			fmt.Println("fccToken: ", fccToken)
-			// TODO 转换返回值
-		}
-
-		// UserBigData
-		data.User = getUserBigData()
-
-		jsonBytes, err := json.Marshal(data)
-		if err != nil {
-			fmt.Println("struct to bytes err : ", err)
-		}
-
-		fmt.Println("resp : ", jsonBytes)
-		fmt.Println("resp 2: ", string(jsonBytes))
-		c.JSON(http.StatusOK, string(jsonBytes))
-
-	})
-	router.Run(":8081")
 }
 
 /*
@@ -215,12 +139,12 @@ func uniswapFCCToken() UniswapToken {
 func getUserBigData() UserBigData {
 
 	var redisClient = connectRedis()
-	day1 := GetDayActiveCount(redisClient, -1)
-	day2 := GetDayActiveCount(redisClient, -1)
-	week1 := GetWeekActiveCount(redisClient, -1)
-	week2 := GetWeekActiveCount(redisClient, -2)
-	month1 := GetMonthActiveCount(redisClient, -1)
-	month2 := GetMonthActiveCount(redisClient, -2)
+	day1 := GetDayActiveCount(redisClient, -1)     // 昨天日活
+	day2 := GetDayActiveCount(redisClient, -2)     // 前天日活
+	week1 := GetWeekActiveCount(redisClient, -1)   // 上周周活
+	week2 := GetWeekActiveCount(redisClient, -2)   // 上上周周活
+	month1 := GetMonthActiveCount(redisClient, -1) // 上月月活
+	month2 := GetMonthActiveCount(redisClient, -2) // 上上月月活
 
 	// TODO remove for test
 	if day1 < 50 {
@@ -250,82 +174,6 @@ func getUserBigData() UserBigData {
 	data.MonthActiveIncrease24H = month1 - month2
 
 	return data
-}
-
-func connectRedis() *redis.Client {
-	if redisClient == nil {
-		redisClient = redis.NewClient(&redis.Options{
-			Addr:     "127.0.0.1:6379",
-			Password: "",
-			DB:       0,
-		})
-	}
-	return redisClient
-}
-
-// day格式20220601
-func DayActiveCount(redisClient *redis.Client, day string) int {
-	eventKey := "active_" + day
-	var dataCache []string
-	getInfo, getinfoErr := redisClient.Get(eventKey).Result()
-	if getinfoErr != nil {
-		return 0
-	} else {
-		//获取到json字符串,反序列化,原来是二维数组的,反序列化的时候也要用二维数组接收
-		unmarsha1Err := json.Unmarshal([]byte(getInfo), &dataCache)
-		if unmarsha1Err != nil {
-			return 0
-		} else {
-			return len(dataCache)
-		}
-	}
-}
-
-// 获取某周的开始和结束时间,0 为当天,-1昨天，1明天以此类推
-func GetDayActiveCount(redisClient *redis.Client, dayOffset int) int {
-	now := time.Now()
-	day := now.AddDate(0, 0, dayOffset).Format("20060102")
-
-	return DayActiveCount(redisClient, day)
-}
-
-// xx周的周活
-// 获取某周的开始和结束时间,week为0本周,-1上周，1下周以此类推
-func GetWeekActiveCount(redisClient *redis.Client, week int) int {
-	weekActiveCount := 0
-
-	now := time.Now()
-	offset := int(time.Monday - now.Weekday())
-	//周日做特殊判断 因为time.Monday = 0
-	if offset > 0 {
-		offset = -6
-	}
-	year, month, day := now.Date()
-	thisWeek := time.Date(year, month, day, 0, 0, 0, 0, time.Local)
-	// startTime = thisWeek.AddDate(0, 0, offset+7*week).Format("2006-01-02") + " 00:00:00"
-	// endTime = thisWeek.AddDate(0, 0, offset+6+7*week).Format("2006-01-02") + " 23:59:59"
-
-	for i := 0; i < 7; i++ {
-		day := thisWeek.AddDate(0, 0, offset+i+7*week).Format("20060102")
-		weekActiveCount += DayActiveCount(redisClient, day)
-	}
-
-	return weekActiveCount
-}
-
-// 月活数 week为0本月,-1上月，1下月以此类推
-func GetMonthActiveCount(redisClient *redis.Client, monthOffset int) int {
-	monthActiveCount := 0
-
-	year, month, _ := time.Now().Date()
-	thisMonth := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
-	monLastDay := thisMonth.AddDate(0, monthOffset+1, -1)
-	for i := 0; i < monLastDay.Day(); i++ {
-		day := thisMonth.AddDate(0, monthOffset, i).Format("20060102")
-		monthActiveCount += DayActiveCount(redisClient, day)
-	}
-
-	return monthActiveCount
 }
 
 func getInstIdTickerInfo(params string) *http.Response {
@@ -582,7 +430,8 @@ func startGin() {
 		}
 
 		// 事件埋入redis
-		saveEventData(data)
+		redisClient := connectRedis()
+		saveEventData(redisClient, data)
 
 		c.JSON(http.StatusOK, "OK")
 	})
@@ -888,120 +737,4 @@ type ResultRsp struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
 	Result  string `json:"result"`
-}
-
-// uniswap token struct
-type UniswapResp struct {
-	Data UniswapData `json:"data"`
-}
-type UniswapData struct {
-	Token Token `json:"token"`
-}
-
-type Token struct {
-	DerivedETH                   string `json:"derivedETH"`
-	FeesUSD                      string `json:"feesUSD"`
-	Name                         string `json:"name"`
-	PoolCount                    string `json:"poolCount"`
-	Symbol                       string `json:"symbol"`
-	TotalSupply                  string `json:"totalSupply"`
-	TotalValueLocked             string `json:"totalValueLocked"`
-	TotalValueLockedUSD          string `json:"totalValueLockedUSD"`
-	TotalValueLockedUSDUntracked string `json:"totalValueLockedUSDUntracked"`
-	TxCount                      string `json:"txCount"`
-	UntrackedVolumeUSD           string `json:"untrackedVolumeUSD"`
-	Volume                       string `json:"volume"`
-	VolumeUSD                    string `json:"volumeUSD"`
-	Decimals                     string `json:"decimals"`
-}
-
-type UniswapToken struct {
-	DerivedETH                   string `json:"derivedETH"`
-	FeesUSD                      string `json:"feesUSD"`
-	Name                         string `json:"name"`
-	PoolCount                    string `json:"poolCount"`
-	Symbol                       string `json:"symbol"`
-	TotalSupply                  string `json:"totalSupply"`
-	TotalValueLocked             string `json:"totalValueLocked"`
-	TotalValueLockedUSD          string `json:"totalValueLockedUSD"`
-	TotalValueLockedUSDUntracked string `json:"totalValueLockedUSDUntracked"`
-	TxCount                      string `json:"txCount"`
-	UntrackedVolumeUSD           string `json:"untrackedVolumeUSD"`
-	Volume                       string `json:"volume"`
-	VolumeUSD                    string `json:"volumeUSD"`
-	Decimals                     string `json:"decimals"`
-}
-
-// uniswap token struct
-type OperateData struct {
-	Freechat  Freechat    `json:"freechat"`
-	User      UserBigData `json:"user"`
-	FPay      FPay        `json:"FPay"`
-	ECommerce ECommerce   `json:"eCommerce"`
-	Ad        Ad          `json:"ad"`
-	NFT       NFT         `json:"NFT"`
-	Game      Game        `json:"game"`
-}
-
-type Freechat struct {
-	TotalEarn           string `json:"totalEarn"`
-	DayEarn             string `json:"dayEarn"`
-	DayEarnIncrease     string `json:"dayEarnIncrease"`
-	WeekEarn            string `json:"weekEarn"`
-	WeekEarnIncrease    string `json:"weekEarnIncrease"`
-	MonthEarn           string `json:"monthEarn"`
-	MonthEarnIncrease   string `json:"monthEarnIncrease"`
-	NowPrice            string `json:"nowPrice"`
-	MarketValue         string `json:"marketValue"`
-	MarketValueIncrease string `json:"marketValueIncrease"`
-	DayVolume           string `json:"dayVolume"`
-	DayVolumeIncrease   string `json:"dayVolumeIncrease"`
-	FccUser             string `json:"fccUser"`
-	FccUserIncrease     string `json:"fccUserIncrease"`
-	TotalProfit         string `json:"totalProfit"`
-	WaitProfit          string `json:"waitProfit"`
-	PerFccProfit        string `json:"perFccProfit"`
-	PledgeProfit        string `json:"pledgeProfit"`
-	PledgeRate          string `json:"pledgeRate"`
-	// 少了1对
-}
-type UserBigData struct {
-	Total                  int `json:"total"`
-	DayIncrease            int `json:"dayIncrease"`
-	DayActive              int `json:"dayActive"`
-	DayActiveIncrease24H   int `json:"dayActiveIncrease"`
-	WeekActive             int `json:"weekActive"`
-	WeekActiveIncrease24H  int `json:"weekActiveIncrease"`
-	MonthActive            int `json:"monthActive"`
-	MonthActiveIncrease24H int `json:"monthActiveIncrease"`
-}
-type FPay struct {
-}
-type ECommerce struct {
-}
-type Ad struct {
-}
-type NFT struct {
-}
-type Game struct {
-}
-
-// 埋点事件
-type EventData struct {
-	UserId  string `json:"userId"`  // 用户
-	IP      string `json:"ip"`      // IP
-	Device  string `json:"device"`  // 设备
-	Os      string `json:"system"`  // 设备系统
-	Browser string `json:"browser"` // 浏览器
-
-	Page    string `json:"page"`    // 页面
-	Event   string `json:"event"`   // 事件
-	Action  string `json:"action"`  // 动作
-	Comment string `json:"comment"` // comment
-	Date    string `json:"date"`    // 时间
-}
-
-type Transtation1inch struct {
-	ToTokenAmount   string `json:"toTokenAmount"`
-	FromTokenAmount string `json:"fromTokenAmount"`
 }
