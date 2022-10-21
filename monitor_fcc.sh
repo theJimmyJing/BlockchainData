@@ -9,8 +9,8 @@ do
 	then
 		echo "fcc program is not running, restart"
 		./deploy_web.sh &
-	else
-		echo "fcc program is running"
+	# else
+	# 	echo "fcc program is running"
 	fi
-	sleep 5
+	sleep 10
 done
