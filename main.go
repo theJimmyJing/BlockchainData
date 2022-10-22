@@ -58,9 +58,10 @@ func GetFccUPrice() (string, string) {
 	if err == nil {
 		err = json.Unmarshal(body, &data)
 	}
+	var usd
 	usdtAmount, err := strconv.ParseFloat(data.FromTokenAmount, 64)
 	fccAmount, err := strconv.ParseFloat(data.ToTokenAmount, 64)
-	price := usdtAmount / fccAmount
+	price := (usdtAmount / 10 ^ 6) / (fccAmount / 10 ^ 18)
 	totalPrice := 100000000 * price
 
 	return strconv.FormatFloat(price, 'f', 18, 64), strconv.FormatFloat(totalPrice, 'f', 8, 64)
