@@ -21,43 +21,50 @@ import (
 
 func main() {
 	// uniswapFCCToken()
-	operateAllData()
+	// operateAllData()
 	// startServer()
 	// now := time.Now().UnixNano()
 	// time.Sleep(time.Second)
 	// now2 := time.Now().UnixNano()
 	// fmt.Println(now2 - now)
 
-	// startGin()
+	// testEvent()
+	startGin()
 	// startServerV3()
 	// startServerV4()
+
+	// conneRedis()
 }
 
-func operateAllData() {
-	router := gin.Default()
-	router.GET("/api/v5/operate/all", func(c *gin.Context) {
-		var data = OperateData{}
-		// FCC Token
-		fccToken := uniswapFCCToken()
-		if fccToken != (UniswapToken{}) {
-			fmt.Println("fccToken: ", fccToken)
-			// TODO 转换返回值
-		}
+// 获取FCC U价格, 总价格 18位精度
+func GetFccUPrice() (string, string) {
+	// USDT -> FCC
+	url := "https://api.1inch.io/v4.0/1/quote?fromTokenAddress=0xdac17f958d2ee523a2206206994597c13d831ec7&toTokenAddress=0x171b1daefac13a0a3524fcb6beddc7b31e58e079&amount=100000"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("GetFccPrice url new err ", err)
+		return "0", "0"
+	}
 
-		// UserBigData
-		data.User = getUserBigData()
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		// handle err
+		log.Default().Printf("GetFccPrice Do err : ", err)
+		return "0", "0"
+	}
 
-		jsonBytes, err := json.Marshal(data)
-		if err != nil {
-			fmt.Println("struct to bytes err : ", err)
-		}
+	var data = Price1inch{}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err == nil {
+		err = json.Unmarshal(body, &data)
+	}
+	var usd
+	usdtAmount, err := strconv.ParseFloat(data.FromTokenAmount, 64)
+	fccAmount, err := strconv.ParseFloat(data.ToTokenAmount, 64)
+	price := (usdtAmount / 10 ^ 6) / (fccAmount / 10 ^ 18)
+	totalPrice := 100000000 * price
 
-		fmt.Println("resp : ", jsonBytes)
-		fmt.Println("resp 2: ", string(jsonBytes))
-		c.JSON(http.StatusOK, string(jsonBytes))
-
-	})
-	router.Run(":8080")
+	return strconv.FormatFloat(price, 'f', 18, 64), strconv.FormatFloat(totalPrice, 'f', 8, 64)
 }
 
 /*
@@ -120,7 +127,7 @@ func uniswapFCCToken() UniswapToken {
 	fmt.Println("fccToken : ", resp)
 
 	// 结构体转json
-	jsonBytes, err := json.Marshal(UniswapToken(resp.Data.Token))
+	jsonBytes, err := json.Marshal(resp.Data.Token)
 	if err != nil {
 		fmt.Println("struct to bytes err : ", err)
 	}
@@ -131,17 +138,41 @@ func uniswapFCCToken() UniswapToken {
 }
 
 func getUserBigData() UserBigData {
-	// TEST data
-	// TODO
+
+	var redisClient = connectRedis()
+	day1 := GetDayActiveCount(redisClient, -1)     // 昨天日活
+	day2 := GetDayActiveCount(redisClient, -2)     // 前天日活
+	week1 := GetWeekActiveCount(redisClient, -1)   // 上周周活
+	week2 := GetWeekActiveCount(redisClient, -2)   // 上上周周活
+	month1 := GetMonthActiveCount(redisClient, -1) // 上月月活
+	month2 := GetMonthActiveCount(redisClient, -2) // 上上月月活
+
+	// TODO remove for test
+	if day1 < 50 {
+		day1 = 100
+		day2 = 80
+	}
+	if week1 < 100 {
+		day1 = 300
+		day2 = 200
+	}
+	if month1 < 200 {
+		month1 = 500
+		month2 = 300
+	}
+
+	fmt.Println("count: ", day1, day2, week1, week2, month1, month2)
+
 	var data = UserBigData{}
-	data.Total = 100000
+
+	data.Total = 10000
 	data.DayIncrease = 200
-	data.DayActive = 10000
-	data.DayActiveIncrease24H = 1000
-	data.MonthActive = 10000
-	data.MonthActiveIncrease24H = 1000
-	data.WeekActive = 10000
-	data.WeekActiveIncrease24H = 1000
+	data.DayActive = day1
+	data.DayActiveIncrease24H = day1 - day2
+	data.WeekActive = week1
+	data.WeekActiveIncrease24H = week1 - week2
+	data.MonthActive = month1
+	data.MonthActiveIncrease24H = month1 - month2
 
 	return data
 }
@@ -383,6 +414,79 @@ func startGin() {
 
 		c.JSON(http.StatusOK, result)
 		return
+	})
+
+	// 埋点事件
+	router.POST("/api/v5/operate/event", func(c *gin.Context) {
+		var data EventData
+		err := c.ShouldBindJSON(&data)
+
+		if err != nil {
+			fmt.Println("Event parse Err : ", err)
+			c.JSON(500, gin.H{
+				"Code": 500,
+				"Msg":  err.Error(),
+			})
+			return
+		}
+
+		// 事件埋入redis
+		redisClient := connectRedis()
+		saveEventData(redisClient, data)
+
+		c.JSON(http.StatusOK, "OK")
+	})
+
+	// 运营数据
+	router.GET("/api/v5/operate/all", func(c *gin.Context) {
+		var data = OperateData{}
+		// FCC Token
+		// fccToken := uniswapFCCToken()
+		// if fccToken != (UniswapToken{}) {
+		// 	fmt.Println("fccToken: ", fccToken)
+
+		data.Freechat.TotalEarn = "12312321"
+		data.Freechat.DayEarn = "2131"
+		data.Freechat.DayEarnIncrease = "+15.4%"
+		data.Freechat.WeekEarn = "10232"
+		data.Freechat.WeekEarnIncrease = "14.23%"
+		data.Freechat.MonthEarn = "31232"
+		data.Freechat.MonthEarnIncrease = "12.4%"
+
+		data.Freechat.NowPrice = "0.0635"
+		data.Freechat.MarketValue = "1000000000"
+		data.Freechat.MarketValueIncrease = "+4.4%"
+		data.Freechat.DayVolume = "10000"
+		data.Freechat.DayVolumeIncrease = "4.23%"
+		data.Freechat.FccUser = "1000000"
+		data.Freechat.FccUserIncrease = "1.4%"
+
+		data.Freechat.TotalProfit = "5231212"
+		data.Freechat.WaitProfit = "131232"
+		data.Freechat.PerFccProfit = "5.23%"
+		data.Freechat.PledgeProfit = "5.3"
+		data.Freechat.PledgeRate = "3.2%"
+
+		// 	// TODO 转换返回值
+		// }
+		data.Freechat.NowPrice, data.Freechat.MarketValue = GetFccUPrice()
+
+		fmt.Println("GetFccUPrice 2: ", data.Freechat.NowPrice)
+
+		// UserBigData - 读取用户日活等数据
+		data.User = getUserBigData()
+
+		jsonBytes, err := json.Marshal(data)
+
+		if err != nil {
+			fmt.Println("operate/all  struct to bytes err : ", err)
+		}
+		var result map[string]interface{}
+		json.Unmarshal(jsonBytes, &result)
+
+		fmt.Println("operate/all : ", result)
+		c.JSON(http.StatusOK, result)
+
 	})
 	router.Run(":8080")
 }
@@ -637,99 +741,4 @@ type ResultRsp struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
 	Result  string `json:"result"`
-}
-
-// uniswap token struct
-type UniswapResp struct {
-	Data UniswapData `json:"data"`
-}
-type UniswapData struct {
-	Token Token `json:"token"`
-}
-
-type Token struct {
-	DerivedETH                   string `json:"derivedETH"`
-	FeesUSD                      string `json:"feesUSD"`
-	Name                         string `json:"name"`
-	PoolCount                    string `json:"poolCount"`
-	Symbol                       string `json:"symbol"`
-	TotalSupply                  string `json:"totalSupply"`
-	TotalValueLocked             string `json:"totalValueLocked"`
-	TotalValueLockedUSD          string `json:"totalValueLockedUSD"`
-	TotalValueLockedUSDUntracked string `json:"totalValueLockedUSDUntracked"`
-	TxCount                      string `json:"txCount"`
-	UntrackedVolumeUSD           string `json:"untrackedVolumeUSD"`
-	Volume                       string `json:"volume"`
-	VolumeUSD                    string `json:"volumeUSD"`
-	Decimals                     string `json:"decimals"`
-}
-
-type UniswapToken struct {
-	DerivedETH                   string `json:"derivedETH"`
-	FeesUSD                      string `json:"feesUSD"`
-	Name                         string `json:"name"`
-	PoolCount                    string `json:"poolCount"`
-	Symbol                       string `json:"symbol"`
-	TotalSupply                  string `json:"totalSupply"`
-	TotalValueLocked             string `json:"totalValueLocked"`
-	TotalValueLockedUSD          string `json:"totalValueLockedUSD"`
-	TotalValueLockedUSDUntracked string `json:"totalValueLockedUSDUntracked"`
-	TxCount                      string `json:"txCount"`
-	UntrackedVolumeUSD           string `json:"untrackedVolumeUSD"`
-	Volume                       string `json:"volume"`
-	VolumeUSD                    string `json:"volumeUSD"`
-	Decimals                     string `json:"decimals"`
-}
-
-// uniswap token struct
-type OperateData struct {
-	Freechat  Freechat    `json:"freechat"`
-	User      UserBigData `json:"user"`
-	FPay      FPay        `json:"FPay"`
-	ECommerce ECommerce   `json:"eCommerce"`
-	Ad        Ad          `json:"ad"`
-	NFT       NFT         `json:"NFT"`
-	Game      Game        `json:"game"`
-}
-
-type Freechat struct {
-	TotalEarn           string `json:"totalEarn"`
-	DayEarn             string `json:"dayEarn"`
-	DayEarnIncrease     string `json:"dayEarnIncrease"`
-	WeekEarn            string `json:"weekEarn"`
-	WeekEarnIncrease    string `json:"weekEarnIncrease"`
-	MonthEarn           string `json:"monthEarn"`
-	MonthEarnIncrease   string `json:"monthEarnIncrease"`
-	NowPrice            string `json:"nowPrice"`
-	MarketValue         string `json:"marketValue"`
-	MarketValueIncrease string `json:"marketValueIncrease"`
-	DayVolume           string `json:"dayVolume"`
-	DayVolumeIncrease   string `json:"dayVolumeIncrease"`
-	FccUser             string `json:"fccUser"`
-	FccUserIncrease     string `json:"fccUserIncrease"`
-	TotalProfit         string `json:"totalProfit"`
-	WaitProfit          string `json:"waitProfit"`
-	PerFccProfit        string `json:"perFccProfit"`
-	PledgeProfit        string `json:"pledgeProfit"`
-	PledgeRate          string `json:"pledgeRate"`
-}
-type UserBigData struct {
-	Total                  int `json:"total"`
-	DayIncrease            int `json:"dayIncrease"`
-	DayActive              int `json:"dayActive"`
-	DayActiveIncrease24H   int `json:"dayActiveIncrease"`
-	WeekActive             int `json:"weekActive"`
-	WeekActiveIncrease24H  int `json:"weekActiveIncrease"`
-	MonthActive            int `json:"monthActive"`
-	MonthActiveIncrease24H int `json:"monthActiveIncrease"`
-}
-type FPay struct {
-}
-type ECommerce struct {
-}
-type Ad struct {
-}
-type NFT struct {
-}
-type Game struct {
 }
