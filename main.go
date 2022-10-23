@@ -139,6 +139,9 @@ func uniswapFCCToken() UniswapToken {
 func getUserBigData() UserBigData {
 
 	var redisClient = connectRedis()
+	var data = UserBigData{}
+	data.Total = GetAllRegisteredCount(redisClient)
+
 	day1 := GetDayActiveCount(redisClient, -1)     // 昨天日活
 	day2 := GetDayActiveCount(redisClient, -2)     // 前天日活
 	week1 := GetWeekActiveCount(redisClient, -1)   // 上周周活
@@ -162,9 +165,6 @@ func getUserBigData() UserBigData {
 
 	fmt.Println("count: ", day1, day2, week1, week2, month1, month2)
 
-	var data = UserBigData{}
-
-	data.Total = 10000
 	data.DayIncrease = 200
 	data.DayActive = day1
 	data.DayActiveIncrease24H = day1 - day2

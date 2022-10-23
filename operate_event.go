@@ -18,6 +18,14 @@ func connectRedis() *redis.Client {
 	return redisClient
 }
 
+func testKeys(key string) {
+	redisClient := connectRedis()
+	// 测试批量查询匹配的keys
+	keys, _, _ := redisClient.Scan(0, key+"_*", 0).Result()
+
+	fmt.Println(len(keys), keys)
+}
+
 func saveEventData(redisClient *redis.Client, newEvent EventData) {
 	currentTime := time.Now()
 	dayTime := currentTime.Format("20060102")
@@ -121,4 +129,31 @@ func GetMonthActiveCount(redisClient *redis.Client, monthOffset int) int {
 	}
 
 	return monthActiveCount
+}
+
+// 获取指定日期的注册用户数量，day格式register_20220601
+func GetDayRegisteredCount(redisClient *redis.Client, eventDayKey string) int {
+	var dataCache []string
+	getInfo, getinfoErr := redisClient.Get(eventDayKey).Result()
+	if getinfoErr != nil {
+		return 0
+	} else {
+		//获取到json字符串,反序列化,原来是二维数组的,反序列化的时候也要用二维数组接收
+		unmarsha1Err := json.Unmarshal([]byte(getInfo), &dataCache)
+		if unmarsha1Err != nil {
+			return 0
+		} else {
+			return len(dataCache)
+		}
+	}
+}
+
+// 获取所有注册用户数量
+func GetAllRegisteredCount(redisClient *redis.Client) int {
+	count := 0
+	registerKeys, _, _ := redisClient.Scan(0, "register_*", 0).Result()
+	for _, key := range registerKeys {
+		count += GetDayRegisteredCount(redisClient, key)
+	}
+	return count
 }
