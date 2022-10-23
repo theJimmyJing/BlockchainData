@@ -450,27 +450,27 @@ func startGin() {
 		// if fccToken != (UniswapToken{}) {
 		// 	fmt.Println("fccToken: ", fccToken)
 
-		data.Freechat.TotalEarn = ""
-		data.Freechat.DayEarn = ""
-		data.Freechat.DayEarnIncrease = ""
-		data.Freechat.WeekEarn = "10232"
-		data.Freechat.WeekEarnIncrease = "14.23%"
-		data.Freechat.MonthEarn = "31232"
-		data.Freechat.MonthEarnIncrease = "12.4%"
+		data.Freechat.TotalEarn = "-"
+		data.Freechat.DayEarn = "-"
+		data.Freechat.DayEarnIncrease = "-"
+		data.Freechat.WeekEarn = "-"
+		data.Freechat.WeekEarnIncrease = "-"
+		data.Freechat.MonthEarn = "-"
+		data.Freechat.MonthEarnIncrease = "-"
 
-		data.Freechat.NowPrice = "0.0635"
-		data.Freechat.MarketValue = "1000000000"
-		data.Freechat.MarketValueIncrease = "+4.4%"
-		data.Freechat.DayVolume = "10000"
-		data.Freechat.DayVolumeIncrease = "4.23%"
-		data.Freechat.FccUser = "1000000"
-		data.Freechat.FccUserIncrease = "1.4%"
+		data.Freechat.NowPrice = "-"
+		data.Freechat.MarketValue = "-"
+		data.Freechat.MarketValueIncrease = "-"
+		data.Freechat.DayVolume = "-"
+		data.Freechat.DayVolumeIncrease = "-"
+		data.Freechat.FccUser = "-"
+		data.Freechat.FccUserIncrease = "-"
 
-		data.Freechat.TotalProfit = "5231212"
-		data.Freechat.WaitProfit = "131232"
-		data.Freechat.PerFccProfit = "5.23%"
-		data.Freechat.PledgeProfit = "5.3"
-		data.Freechat.PledgeRate = "3.2%"
+		data.Freechat.TotalProfit = "-"
+		data.Freechat.WaitProfit = "-"
+		data.Freechat.PerFccProfit = "-"
+		data.Freechat.PledgeProfit = "-"
+		data.Freechat.PledgeRate = "-"
 
 		// 	// TODO 转换返回值
 		// }
