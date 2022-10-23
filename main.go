@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -57,11 +58,15 @@ func GetFccUPrice() (string, string) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err == nil {
 		err = json.Unmarshal(body, &data)
+		if err != nil {
+			log.Default().Printf("%+v", err)
+			return "0", "0"
+		}
 	}
-	var usd
-	usdtAmount, err := strconv.ParseFloat(data.FromTokenAmount, 64)
-	fccAmount, err := strconv.ParseFloat(data.ToTokenAmount, 64)
-	price := (usdtAmount / 10 ^ 6) / (fccAmount / 10 ^ 18)
+	// var usd float32
+	usdtAmount, _ := strconv.ParseFloat(data.FromTokenAmount, 64)
+	fccAmount, _ := strconv.ParseFloat(data.ToTokenAmount, 64)
+	price := (usdtAmount / math.Pow10(6)) / (fccAmount / math.Pow10(18))
 	totalPrice := 100000000 * price
 
 	return strconv.FormatFloat(price, 'f', 18, 64), strconv.FormatFloat(totalPrice, 'f', 8, 64)
