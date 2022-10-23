@@ -50,7 +50,7 @@ func GetFccUPrice() (string, string) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		// handle err
-		log.Default().Printf("GetFccPrice Do err : ", err)
+		log.Default().Printf("GetFccPrice Do err : %+v", err)
 		return "0", "0"
 	}
 
@@ -450,9 +450,9 @@ func startGin() {
 		// if fccToken != (UniswapToken{}) {
 		// 	fmt.Println("fccToken: ", fccToken)
 
-		data.Freechat.TotalEarn = "12312321"
-		data.Freechat.DayEarn = "2131"
-		data.Freechat.DayEarnIncrease = "+15.4%"
+		data.Freechat.TotalEarn = ""
+		data.Freechat.DayEarn = ""
+		data.Freechat.DayEarnIncrease = ""
 		data.Freechat.WeekEarn = "10232"
 		data.Freechat.WeekEarnIncrease = "14.23%"
 		data.Freechat.MonthEarn = "31232"
