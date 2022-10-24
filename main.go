@@ -493,6 +493,28 @@ func startGin() {
 		c.JSON(http.StatusOK, result)
 
 	})
+
+	router.GET("/api/v5/operate/equitytoken", func(c *gin.Context) {
+		var data = EquitytokenData{}
+
+		// 	// TODO 转换返回值
+		// }
+		data.hold = 700000000
+		data.ownerNum = 4400404
+		data.marketValue = 600000000
+
+		jsonBytes, err := json.Marshal(data)
+
+		if err != nil {
+			fmt.Println("operate/equitytoken  struct to bytes err : ", err)
+		}
+		var result map[string]interface{}
+		json.Unmarshal(jsonBytes, &result)
+
+		fmt.Println("operate/equitytoken : ", result)
+		c.JSON(http.StatusOK, result)
+
+	})
 	router.Run(":8080")
 }
 
