@@ -38,9 +38,9 @@ type OperateData struct {
 }
 
 type EquitytokenData struct {
-	hold          int64   `json:"user"`
-	ownerNum      int64   `json:"FPay"`
-	marketValue   int64   `json:"eCommerce"`
+	Hold        int `json:"hold"`
+	OwnerNum    int `json:"ownerNum"`
+	MarketValue int `json:"marketValue"`
 }
 
 type Freechat struct {

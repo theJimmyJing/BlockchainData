@@ -424,16 +424,16 @@ func startGin() {
 	// 埋点事件
 	router.POST("/api/v5/operate/event", func(c *gin.Context) {
 		var data EventData
-		err := c.ShouldBindJSON(&data)
-
-		if err != nil {
-			fmt.Println("Event parse Err : ", err)
-			c.JSON(500, gin.H{
-				"Code": 500,
-				"Msg":  err.Error(),
-			})
-			return
-		}
+		data.UserId = c.PostForm("userId")
+		data.IP = c.PostForm("ip")
+		data.Device = c.PostForm("device")
+		data.Os = c.PostForm("system")
+		data.Browser = c.PostForm("browser")
+		data.Page = c.PostForm("page")
+		data.Event = c.PostForm("event")
+		data.Action = c.PostForm("action")
+		data.Comment = c.PostForm("comment")
+		data.Date = c.PostForm("date")
 
 		// 事件埋入redis
 		redisClient := connectRedis()
@@ -494,24 +494,23 @@ func startGin() {
 
 	})
 
-	router.GET("/api/v5/operate/equitytoken", func(c *gin.Context) {
+	router.GET("/api/v5/equitytoken", func(c *gin.Context) {
 		var data = EquitytokenData{}
 
-		// 	// TODO 转换返回值
-		// }
-		data.hold = 700000000
-		data.ownerNum = 4400404
-		data.marketValue = 600000000
+		// TODO 转换返回值
+		data.Hold = 700000000
+		data.OwnerNum = 4400404
+		data.MarketValue = 600000000
 
 		jsonBytes, err := json.Marshal(data)
 
 		if err != nil {
-			fmt.Println("operate/equitytoken  struct to bytes err : ", err)
+			fmt.Println("/equitytoken  struct to bytes err : ", err)
 		}
 		var result map[string]interface{}
 		json.Unmarshal(jsonBytes, &result)
 
-		fmt.Println("operate/equitytoken : ", result)
+		fmt.Println("/equitytoken : ", result)
 		c.JSON(http.StatusOK, result)
 
 	})
