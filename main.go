@@ -424,22 +424,21 @@ func startGin() {
 	// 埋点事件
 	router.POST("/api/v5/operate/event", func(c *gin.Context) {
 		var data EventData
-		data.UserId = c.PostForm("userId")
-		data.IP = c.PostForm("ip")
-		data.Device = c.PostForm("device")
-		data.Os = c.PostForm("system")
-		data.Browser = c.PostForm("browser")
-		data.Page = c.PostForm("page")
-		data.Event = c.PostForm("event")
-		data.Action = c.PostForm("action")
-		data.Comment = c.PostForm("comment")
-		data.Date = c.PostForm("date")
+		err := c.ShouldBindJSON(&data)
+
+		if err != nil {
+			fmt.Println("Event parse Err : ", err)
+			c.JSON(500, gin.H{
+				"msg":  "bindjson报错了, error: " + err.Error(),
+				"data": gin.H{},
+			})
+		}
 
 		// 事件埋入redis
 		redisClient := connectRedis()
 		saveEventData(redisClient, data)
 
-		c.JSON(http.StatusOK, "OK")
+		c.JSON(http.StatusOK, "ok")
 	})
 
 	// 运营数据
