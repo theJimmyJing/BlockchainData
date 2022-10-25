@@ -36,10 +36,10 @@ func uniswap_fcc_transactions() {
 	if err != nil {
 		log.Fatalf("FccTransactions cmd.Run() failed with", err)
 	}
-	outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
+	// outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
 
-	fmt.Println("FccTransactions outStr : ", outStr)
-	fmt.Println("FccTransactions errStr ：", errStr)
+	// fmt.Println("FccTransactions outStr : ", outStr)
+	// fmt.Println("FccTransactions errStr ：", errStr)
 
 	redisClient := connectRedis()
 	saveFccTransactionsData(redisClient, stdout.Bytes())
@@ -71,7 +71,7 @@ func saveFccTransactionsData(redisClient *redis.Client, data []byte) {
 	if infoErrorStatus != nil {
 		fmt.Println("saveFccTransactionsData failed：", infoErrorStatus)
 	} else {
-		fmt.Println("saveFccTransactionsData success")
+		fmt.Println("saveFccTransactionsData update success")
 	}
 }
 
@@ -87,12 +87,11 @@ func getCachedFccTransactionsData(redisClient *redis.Client) FccTranscationsResp
 		unmarsha1Err := json.Unmarshal([]byte(getInfo), &dataCache)
 		if unmarsha1Err != nil {
 			fmt.Println("反序列化失败:", unmarsha1Err)
-		} else {
-			fmt.Println(dataCache)
+			// } else {
+			// 	fmt.Println(dataCache)
 		}
 	}
 
-	fmt.Println("getCachedFccTransactionsData   ", dataCache)
 	return dataCache
 }
 
