@@ -360,17 +360,16 @@ func startGin() {
 		if err != nil {
 			fmt.Println("Event parse Err : ", err)
 			c.JSON(500, gin.H{
-				"Code": 500,
-				"Msg":  err.Error(),
+				"msg":  "bindjson报错了, error: " + err.Error(),
+				"data": gin.H{},
 			})
-			return
 		}
 
 		// 事件埋入redis
 		redisClient := connectRedis()
 		saveEventData(redisClient, data)
 
-		c.JSON(http.StatusOK, "OK")
+		c.JSON(http.StatusOK, "ok")
 	})
 
 	// 运营数据
@@ -430,6 +429,30 @@ func startGin() {
 		dataCached := getCachedFccTransactionsData(connectRedis())
 
 		c.JSON(http.StatusOK, dataCached)
+	})
+
+	router.GET("/api/v5/equitytoken", func(c *gin.Context) {
+		var data = EquitytokenData{}
+		var res = EquitytokenRes{}
+
+		// TODO 转换返回值
+		data.Hold = 700000000
+		data.OwnerNum = 4400404
+		data.MarketValue = 600000000
+
+		res.Data = data
+		res.Code = 1
+
+		jsonBytes, err := json.Marshal(res)
+
+		if err != nil {
+			fmt.Println("/equitytoken  struct to bytes err : ", err)
+			return
+		}
+
+		json.Unmarshal(jsonBytes, &res)
+		fmt.Println("/equitytoken : ", res)
+		c.JSON(http.StatusOK, res)
 	})
 
 	router.Run(":8080")

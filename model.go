@@ -37,6 +37,17 @@ type OperateData struct {
 	Game      Game        `json:"game"`
 }
 
+type EquitytokenData struct {
+	Hold        int `json:"hold"`
+	OwnerNum    int `json:"ownerNum"`
+	MarketValue int `json:"marketValue"`
+}
+
+type EquitytokenRes struct {
+	Code int             `json:"code"`
+	Data EquitytokenData `json:"data"`
+}
+
 type Freechat struct {
 	TotalEarn           string `json:"totalEarn"`
 	DayEarn             string `json:"dayEarn"`
