@@ -1,10 +1,10 @@
 package main
 
 // uniswap token struct
-type UniswapResp struct {
-	Data UniswapData `json:"data"`
+type UniswapTokenResp struct {
+	Data UniswapTokenData `json:"data"`
 }
-type UniswapData struct {
+type UniswapTokenData struct {
 	Token UniswapToken `json:"token"`
 }
 
