@@ -37,42 +37,28 @@ func uniswap_fcc_transactions() {
 	if err != nil {
 		log.Fatalf("FccTransactions cmd.Run() failed with ", err)
 	}
-	// outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
+	outStr, _ := string(stdout.Bytes()), string(stderr.Bytes())
 
+	// outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
+	// fmt.Println("------------------------")
 	// fmt.Println("FccTransactions outStr : ", outStr)
+	// fmt.Println("------------------------")
 	// fmt.Println("FccTransactions errStr ：", errStr)
+	// fmt.Println("------------------------")
 
 	redisClient := connectRedis()
-	saveFccTransactionsData(redisClient, stdout.Bytes())
-
-	// // json转结构体
-	// uerr := json.Unmarshal(stdout.Bytes(), &resp)
-	// if uerr != nil {
-	// 	log.Fatalf("stdout-> UniswapToken err", uerr)
-	// }
-	// fmt.Println("FccTransactions resp : ", resp)
-
-	// // 结构体转json
-	// jsonBytes, err := json.Marshal(resp.Data.Transactions)
-	// if err != nil {
-	// 	fmt.Println("FccTransactions struct to bytes err : ", err)
-	// }
-	// fmt.Println("FccTransactions: ", string(jsonBytes))
-
-	// return UniswapToken(resp.Data.Token)
-	// TODO read data from Stdout and
+	saveFccTransactionsData(redisClient, outStr)
 }
 
 // save FccTransactions to redis
-func saveFccTransactionsData(redisClient *redis.Client, data []byte) {
+func saveFccTransactionsData(redisClient *redis.Client, data string) {
 	Fcc_Transactions_KEY := "fcc_transactions"
-
-	transactionsValue := string(data)                                                    //转换成字符串
-	infoErrorStatus := redisClient.Set(Fcc_Transactions_KEY, transactionsValue, 0).Err() //设置过期时间- 不过期
+	//转换成字符串
+	infoErrorStatus := redisClient.Set(Fcc_Transactions_KEY, data, 0).Err() //设置过期时间- 不过期
 	if infoErrorStatus != nil {
 		fmt.Println("saveFccTransactionsData failed：", infoErrorStatus)
-	} else {
-		fmt.Println("Fcc Transactions Data updated")
+		// } else {
+		// 	fmt.Println("Fcc Transactions Data updated")
 	}
 }
 
@@ -89,7 +75,27 @@ func getCachedFccTransactionsData(redisClient *redis.Client) FccTranscationsResp
 		if unmarsha1Err != nil {
 			fmt.Println("反序列化失败:", unmarsha1Err)
 			// } else {
-			// 	fmt.Println(dataCache)
+			// 	fmt.Println("cached", dataCache)
+		}
+	}
+
+	return dataCache
+}
+
+func getCachedFccTransactions(redisClient *redis.Client, symbol string, id string) FccTranscationsResp {
+	Fcc_Transactions_KEY := "fcc_transactions"
+	getInfo, getinfoErr := redisClient.Get(Fcc_Transactions_KEY).Result()
+
+	dataCache := FccTranscationsResp{}
+	if getinfoErr != nil {
+		fmt.Println("getCachedFccTransactionsData no data", getinfoErr)
+	} else {
+		//获取到json字符串,反序列化,原来是二维数组的,反序列化的时候也要用二维数组接收
+		unmarsha1Err := json.Unmarshal([]byte(getInfo), &dataCache)
+		if unmarsha1Err != nil {
+			fmt.Println("反序列化失败:", unmarsha1Err)
+		} else {
+			fmt.Println(dataCache)
 		}
 	}
 
@@ -101,51 +107,48 @@ type FccTranscationsResp struct {
 }
 
 type FccTranscationsData struct {
-	Token        FccTranscationsToken   `json:"token"`
-	Transactions []FccTranscationsSwaps `json:"transactions"`
+	Token        FccTranscationsToken `json:"token,omitempty,omitempty"`
+	Transactions []FccTransactions    `json:"transactions,omitempty,omitempty"`
+}
+
+type FccTransactions struct {
+	BlockNumber string                 `json:"blockNumber,omitempty"`
+	Timestamp   string                 `json:"timestamp,omitempty"`
+	ID          string                 `json:"id,omitempty"`
+	GasUsed     string                 `json:"gasUsed,omitempty"`
+	GasPrice    string                 `json:"gasPrice,omitempty"`
+	Swaps       []FccTranscationsSwaps `json:"swaps,omitempty"`
 }
 
 type FccTranscationsToken struct {
-	Decimals                     string `json:"decimals"`
-	DerivedETH                   string `json:"derivedETH"`
-	FeesUSD                      string `json:"feesUSD"`
-	ID                           string `json:"id"`
-	Name                         string `json:"name"`
-	Symbol                       string `json:"symbol"`
-	TotalSupply                  string `json:"totalSupply"`
-	TotalValueLocked             string `json:"totalValueLocked"`
-	TotalValueLockedUSD          string `json:"totalValueLockedUSD"`
-	TotalValueLockedUSDUntracked string `json:"totalValueLockedUSDUntracked"`
-	TxCount                      string `json:"txCount"`
+	Decimals                     string `json:"decimals,omitempty"`
+	DerivedETH                   string `json:"derivedETH,omitempty"`
+	FeesUSD                      string `json:"feesUSD,omitempty"`
+	ID                           string `json:"id,omitempty"`
+	Name                         string `json:"name,omitempty"`
+	Symbol                       string `json:"symbol,omitempty"`
+	TotalSupply                  string `json:"totalSupply,omitempty"`
+	TotalValueLocked             string `json:"totalValueLocked,omitempty"`
+	TotalValueLockedUSD          string `json:"totalValueLockedUSD,omitempty"`
+	TotalValueLockedUSDUntracked string `json:"totalValueLockedUSDUntracked,omitempty"`
+	TxCount                      string `json:"txCount,omitempty"`
 }
-type FccTranscationsToken0 struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Symbol string `json:"symbol"`
-}
-type FccTranscationsToken1 struct {
-	Decimals string `json:"decimals"`
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Symbol   string `json:"symbol"`
+
+type FccTranscationToken struct {
+	Decimals string `json:"decimals,omitempty"`
+	ID       string `json:"id,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Symbol   string `json:"symbol,omitempty"`
 }
 
 type FccTransaction struct {
-	Swaps []FccTranscationsSwaps `json:"swaps"`
+	Swaps []FccTranscationsSwaps `json:"swaps,omitempty"`
 }
 type FccTranscationsSwaps struct {
-	ID          string                `json:"id"`
-	Amount0     string                `json:"amount0"`
-	Amount1     string                `json:"amount1"`
-	Token0      FccTranscationsToken0 `json:"token0"`
-	Token1      FccTranscationsToken1 `json:"token1"`
-	Transaction FccTransaction        `json:"transaction"`
-}
-type FccTransactions struct {
-	BlockNumber string                 `json:"blockNumber"`
-	Timestamp   string                 `json:"timestamp"`
-	ID          string                 `json:"id"`
-	GasUsed     string                 `json:"gasUsed"`
-	GasPrice    string                 `json:"gasPrice"`
-	Swaps       []FccTranscationsSwaps `json:"swaps"`
+	ID          string              `json:"id,omitempty"`
+	Amount0     string              `json:"amount0,omitempty"`
+	Amount1     string              `json:"amount1,omitempty"`
+	Token0      FccTranscationToken `json:"token0,omitempty"`
+	Token1      FccTranscationToken `json:"token1,omitempty"`
+	Transaction FccTransaction      `json:"transaction,omitempty"`
 }
