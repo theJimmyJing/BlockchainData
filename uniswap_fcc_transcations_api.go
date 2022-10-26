@@ -11,7 +11,7 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
-var transactionsData FccTranscationsData
+var FCC_TOKEN_ID = "0x171b1daefac13a0a3524fcb6beddc7b31e58e079"
 
 // 定时更新交易记录
 func uniswap_fcc_transactions_timer() {
@@ -66,12 +66,12 @@ func getCachedFccTransactionsData(redisClient *redis.Client) FccTranscationsResp
 	Fcc_Transactions_KEY := "fcc_transactions"
 	getInfo, getinfoErr := redisClient.Get(Fcc_Transactions_KEY).Result()
 
-	dataCache := FccTranscationsResp{}
+	dataCached := FccTranscationsResp{}
 	if getinfoErr != nil {
 		fmt.Println("getCachedFccTransactionsData no data", getinfoErr)
 	} else {
 		//获取到json字符串,反序列化,原来是二维数组的,反序列化的时候也要用二维数组接收
-		unmarsha1Err := json.Unmarshal([]byte(getInfo), &dataCache)
+		unmarsha1Err := json.Unmarshal([]byte(getInfo), &dataCached)
 		if unmarsha1Err != nil {
 			fmt.Println("反序列化失败:", unmarsha1Err)
 			// } else {
@@ -79,7 +79,39 @@ func getCachedFccTransactionsData(redisClient *redis.Client) FccTranscationsResp
 		}
 	}
 
-	return dataCache
+	return dataCached
+}
+
+// 获取FCC与指定token(id)的交易
+func getTransactionsWithToken(redisClient *redis.Client, tokenId string) FccTranscationsResp {
+	dataCached := getCachedFccTransactionsData(redisClient)
+
+	transactions := []FccTransactions{}
+
+	for i := 0; i < len(dataCached.Data.Transactions); i++ {
+		swaps := dataCached.Data.Transactions[i].Swaps
+		if swaps != nil {
+		TAG:
+			for j := 0; j < len(swaps); j++ {
+				if swaps[j].Token0.ID == tokenId || swaps[j].Token1.ID == tokenId {
+					transactions = append(transactions, dataCached.Data.Transactions[i])
+					break TAG
+				} else if swaps[j].Transaction.Swaps != nil {
+					swapsInner := swaps[j].Transaction.Swaps
+					for k := 0; k < len(swapsInner); k++ {
+						if swaps[k].Token0.ID == tokenId || swaps[k].Token1.ID == tokenId {
+							transactions = append(transactions, dataCached.Data.Transactions[i])
+							break TAG
+						}
+					}
+				}
+			}
+		}
+	}
+
+	dataCached.Data.Transactions = transactions
+
+	return dataCached
 }
 
 func getCachedFccTransactions(redisClient *redis.Client, symbol string, id string) FccTranscationsResp {
@@ -120,6 +152,15 @@ type FccTransactions struct {
 	Swaps       []FccTranscationsSwaps `json:"swaps,omitempty"`
 }
 
+type FccTranscationsSwaps struct {
+	ID          string              `json:"id,omitempty"`
+	Amount0     string              `json:"amount0,omitempty"`
+	Amount1     string              `json:"amount1,omitempty"`
+	Token0      FccTranscationToken `json:"token0,omitempty"`
+	Token1      FccTranscationToken `json:"token1,omitempty"`
+	Transaction FccTransaction      `json:"transaction,omitempty"`
+}
+
 type FccTranscationsToken struct {
 	Decimals                     string `json:"decimals,omitempty"`
 	DerivedETH                   string `json:"derivedETH,omitempty"`
@@ -143,12 +184,4 @@ type FccTranscationToken struct {
 
 type FccTransaction struct {
 	Swaps []FccTranscationsSwaps `json:"swaps,omitempty"`
-}
-type FccTranscationsSwaps struct {
-	ID          string              `json:"id,omitempty"`
-	Amount0     string              `json:"amount0,omitempty"`
-	Amount1     string              `json:"amount1,omitempty"`
-	Token0      FccTranscationToken `json:"token0,omitempty"`
-	Token1      FccTranscationToken `json:"token1,omitempty"`
-	Transaction FccTransaction      `json:"transaction,omitempty"`
 }

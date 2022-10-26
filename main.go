@@ -20,8 +20,6 @@ import (
 
 func main() {
 	// uniswapFCCToken()
-	// uniswap_fcc_transactions()
-
 	// 将每分钟更新交易记录  - 服务器异常，暂时关掉
 	go uniswap_fcc_transactions_timer()
 
@@ -429,9 +427,17 @@ func startGin() {
 
 	// 运营数据 - 获取全部fcc交易记录
 	router.GET("/api/v5/operate/fcc_transactions", func(c *gin.Context) {
-		dataCached := getCachedFccTransactionsData(connectRedis())
+		token := c.Query("token")
+		fmt.Println("fcc_transactions token: ", token)
 
-		c.JSON(http.StatusOK, dataCached)
+		var dataResult FccTranscationsResp
+		if token == "" {
+			dataResult = getCachedFccTransactionsData(connectRedis())
+		} else {
+			dataResult = getTransactionsWithToken(connectRedis(), token)
+		}
+
+		c.JSON(http.StatusOK, dataResult)
 	})
 
 	router.GET("/api/v5/equitytoken", func(c *gin.Context) {
