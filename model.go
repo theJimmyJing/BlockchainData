@@ -38,9 +38,9 @@ type OperateData struct {
 }
 
 type EquitytokenData struct {
-	Hold        int `json:"hold"`
-	OwnerNum    int `json:"ownerNum"`
-	MarketValue int `json:"marketValue"`
+	Hold        int    `json:"hold"`
+	OwnerNum    int    `json:"ownerNum"`
+	MarketValue string `json:"marketValue"`
 }
 
 type EquitytokenRes struct {

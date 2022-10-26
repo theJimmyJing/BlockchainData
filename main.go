@@ -68,7 +68,8 @@ func GetFccUPrice() (string, string) {
 	usdtAmount, _ := strconv.ParseFloat(data.FromTokenAmount, 64)
 	fccAmount, _ := strconv.ParseFloat(data.ToTokenAmount, 64)
 	price := (usdtAmount / math.Pow10(6)) / (fccAmount / math.Pow10(18))
-	totalPrice := 100000000 * price
+	// 十亿代币
+	totalPrice := 1000000000 * price
 
 	return strconv.FormatFloat(price, 'f', 18, 64), strconv.FormatFloat(totalPrice, 'f', 8, 64)
 }
@@ -435,11 +436,11 @@ func startGin() {
 	router.GET("/api/v5/equitytoken", func(c *gin.Context) {
 		var data = EquitytokenData{}
 		var res = EquitytokenRes{}
-
+		var _, MarketValue = GetFccUPrice()
 		// TODO 转换返回值
 		data.Hold = 700000000
 		data.OwnerNum = 4400404
-		data.MarketValue = 600000000
+		data.MarketValue = MarketValue
 
 		res.Data = data
 		res.Code = 1
