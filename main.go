@@ -427,14 +427,14 @@ func startGin() {
 
 	// 运营数据 - 获取全部fcc交易记录
 	router.GET("/api/v5/operate/fcc_transactions", func(c *gin.Context) {
-		token := c.Query("token")
-		fmt.Println("fcc_transactions token: ", token)
+		tokenId := c.Query("tokenId") // 指定代币的Token Id
+		fmt.Println("fcc_transactions token: ", tokenId)
 
 		var dataResult FccTranscationsResp
-		if token == "" {
+		if tokenId == "" {
 			dataResult = getCachedFccTransactionsData(connectRedis())
 		} else {
-			dataResult = getTransactionsWithToken(connectRedis(), token)
+			dataResult = getTransactionsWithToken(connectRedis(), tokenId)
 		}
 
 		c.JSON(http.StatusOK, dataResult)

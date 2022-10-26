@@ -89,6 +89,7 @@ func getTransactionsWithToken(redisClient *redis.Client, tokenId string) FccTran
 	transactions := []FccTransactions{}
 
 	for i := 0; i < len(dataCached.Data.Transactions); i++ {
+
 		swaps := dataCached.Data.Transactions[i].Swaps
 		if swaps != nil {
 		TAG:
@@ -99,7 +100,7 @@ func getTransactionsWithToken(redisClient *redis.Client, tokenId string) FccTran
 				} else if swaps[j].Transaction.Swaps != nil {
 					swapsInner := swaps[j].Transaction.Swaps
 					for k := 0; k < len(swapsInner); k++ {
-						if swaps[k].Token0.ID == tokenId || swaps[k].Token1.ID == tokenId {
+						if swapsInner[k].Token0.ID == tokenId || swapsInner[k].Token1.ID == tokenId {
 							transactions = append(transactions, dataCached.Data.Transactions[i])
 							break TAG
 						}
