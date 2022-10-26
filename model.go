@@ -104,7 +104,7 @@ type EventData struct {
 	Event   string `json:"event"`   // 事件
 	Action  string `json:"action"`  // 动作
 	Comment string `json:"comment"` // comment
-	Date    string `json:"date"`    // 时间
+	Date    int    `json:"date"`    // 时间
 }
 
 // 从1inch获取币兑换数量，可用于计算币价
