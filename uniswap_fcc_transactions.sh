@@ -1,4 +1,4 @@
-curl 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3' \
+  curl 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3' \
   -H 'authority: api.thegraph.com' \
   -H 'accept: application/json, multipart/mixed' \
   -H 'accept-language: zh-CN,zh;q=0.9' \
@@ -12,5 +12,5 @@ curl 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3' \
   -H 'sec-fetch-mode: cors' \
   -H 'sec-fetch-site: same-origin' \
   -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36' \
-  --data-raw '{"query":"query MyQuery {\n  token(id: \"0x171b1daefac13a0a3524fcb6beddc7b31e58e079\") {\n    decimals\n    derivedETH\n    feesUSD\n    id\n    name\n    symbol\n    totalSupply\n    totalValueLocked\n    totalValueLockedUSD\n    totalValueLockedUSDUntracked\n    txCount\n  }\n  transactions(\n    where: {swaps_: {token0: \"0x171b1daefac13a0a3524fcb6beddc7b31e58e079\"}}\n  ) {\n    blockNumber\n    timestamp\n    id\n    gasUsed\n    gasPrice\n    swaps {\n      id\n      amount0\n      amount1\n      token0 {\n        id\n        name\n        symbol\n      }\n      token1 {\n        decimals\n        id\n        name\n        symbol\n      }\n      transaction {\n        swaps {\n          amount0\n          amount1\n          token0 {\n            id\n            name\n          }\n        }\n      }\n    }\n  }\n}","variables":null,"extensions":{"headers":null}}' \
+  --data '{"query":"query MyQuery {\n  token(id: \"0x171b1daefac13a0a3524fcb6beddc7b31e58e079\") {\n    decimals\n    derivedETH\n    feesUSD\n    id\n    name\n    symbol\n    totalSupply\n    totalValueLocked\n    totalValueLockedUSD\n    totalValueLockedUSDUntracked\n    txCount\n  }\n  transactions(\n    where: {swaps_: {token0: \"0x171b1daefac13a0a3524fcb6beddc7b31e58e079\"}}\n  ) {\n    blockNumber\n    timestamp\n    id\n    gasUsed\n    gasPrice\n    swaps {\n      id\n      amount0\n      amount1\n      token0 {\n        id\n        name\n        symbol\n      }\n      token1 {\n        decimals\n        id\n        name\n        symbol\n      }\n      transaction {\n        swaps {\n          amount0\n          amount1\n          token0 {\n            id\n            name\n          }\n        }\n      }\n    }\n  }\n}","variables":null,"extensions":{"headers":null}}' \
   --compressed

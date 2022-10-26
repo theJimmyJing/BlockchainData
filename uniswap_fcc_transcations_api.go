@@ -25,6 +25,7 @@ func uniswap_fcc_transactions_timer() {
 func uniswap_fcc_transactions() {
 	// func uniswap_fcc_transactions() FccTransactions {
 
+	// linux 服务器版本curl不识别--data-raw, 换成--data即可
 	cmd := exec.Command("sh", "./uniswap_fcc_transactions.sh") // chmod -R 777 Tokenlist (Permission failed)
 
 	var stdout, stderr bytes.Buffer
@@ -34,7 +35,7 @@ func uniswap_fcc_transactions() {
 	// var resp = FccTranscationsResp{}
 	err := cmd.Run()
 	if err != nil {
-		log.Fatalf("FccTransactions cmd.Run() failed with", err)
+		log.Fatalf("FccTransactions cmd.Run() failed with ", err)
 	}
 	// outStr, errStr := string(stdout.Bytes()), string(stderr.Bytes())
 
@@ -71,7 +72,7 @@ func saveFccTransactionsData(redisClient *redis.Client, data []byte) {
 	if infoErrorStatus != nil {
 		fmt.Println("saveFccTransactionsData failed：", infoErrorStatus)
 	} else {
-		fmt.Println("saveFccTransactionsData update success")
+		fmt.Println("Fcc Transactions Data updated")
 	}
 }
 
