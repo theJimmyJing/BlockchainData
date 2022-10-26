@@ -365,6 +365,7 @@ func startGin() {
 				"msg":  "bindjson报错了, error: " + err.Error(),
 				"data": gin.H{},
 			})
+			return
 		}
 
 		// 事件埋入redis
