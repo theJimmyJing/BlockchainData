@@ -94,6 +94,7 @@ func getTransactionsWithToken(redisClient *redis.Client, tokenId string) FccTran
 		if swaps != nil {
 		TAG:
 			for j := 0; j < len(swaps); j++ {
+
 				if swaps[j].Token0.ID == tokenId || swaps[j].Token1.ID == tokenId {
 					transactions = append(transactions, dataCached.Data.Transactions[i])
 					break TAG
@@ -140,8 +141,8 @@ type FccTranscationsResp struct {
 }
 
 type FccTranscationsData struct {
-	Token        FccTranscationsToken `json:"token,omitempty,omitempty"`
-	Transactions []FccTransactions    `json:"transactions,omitempty,omitempty"`
+	Token        FccTranscationsToken `json:"token,omitempty"`
+	Transactions []FccTransactions    `json:"transactions,omitempty"`
 }
 
 type FccTransactions struct {
@@ -160,6 +161,9 @@ type FccTranscationsSwaps struct {
 	Token0      FccTranscationToken `json:"token0,omitempty"`
 	Token1      FccTranscationToken `json:"token1,omitempty"`
 	Transaction FccTransaction      `json:"transaction,omitempty"`
+	Sender      string              `json:"sender,omitempty"`
+	Recipient   string              `json:"recipient,omitempty"`
+	Origin      string              `json:"origin,omitempty"`
 }
 
 type FccTranscationsToken struct {

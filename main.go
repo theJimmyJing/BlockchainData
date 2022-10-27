@@ -20,7 +20,9 @@ import (
 
 func main() {
 	// uniswapFCCToken()
-	// 将每分钟更新交易记录  - 服务器异常，暂时关掉
+	// EtherscanAddrTransactions("0xA8A1D9510136661Bd042Bb24D2e9596920894361")
+	// uniswap_fcc_transactions()
+	// 将每分钟更新FCC币的交易记录
 	go uniswap_fcc_transactions_timer()
 
 	// operateAllData()
@@ -438,6 +440,13 @@ func startGin() {
 			dataResult = getTransactionsWithToken(connectRedis(), tokenId)
 		}
 
+		c.JSON(http.StatusOK, dataResult)
+	})
+
+	// 从etherscan获取地址的交易记录
+	router.GET("/api/v5/operate/etherscan_transactions", func(c *gin.Context) {
+		address := c.Query("address") // 指定的address (代币或钱包)
+		var dataResult = EtherscanAddrTransactions(address)
 		c.JSON(http.StatusOK, dataResult)
 	})
 
