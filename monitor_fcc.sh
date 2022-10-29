@@ -16,6 +16,6 @@
 		./deploy_web.sh &
 	# else
 	# 	echo "fcc program is running"
-	# fi
+	fi
 	# sleep 10
 # done
