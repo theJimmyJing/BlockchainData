@@ -394,7 +394,7 @@ func startGin() {
 
 		// 	// TODO 转换返回值
 		// }
-		// data.Freechat.NowPrice, data.Freechat.MarketValue = GetFccUPrice()
+		data.Freechat.NowPrice, data.Freechat.MarketValue = GetFccUPrice()
 
 		fmt.Println("GetFccUPrice 2: ", data.Freechat.NowPrice)
 
