@@ -4,34 +4,37 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-redis/redis/v7"
+	"github.com/garyburd/redigo/redis"
 )
 
-func SaveActive(redisClient *redis.Client, userId string) {
+// redigo连接数据库，后期改pool
+func ConnectRedis() redis.Conn {
+	client, err := redis.Dial("tcp", "localhost:6379", redis.DialPassword(""))
+	if err != nil {
+		panic(err)
+	}
+	return client
+}
+
+// 保存event事件
+func SaveActive(userId string) {
+	redisClient := ConnectRedis()
+	defer redisClient.Close()
 	currentTime := time.Now()
 	dayTime := currentTime.Format("20060102")
-	// dayTime := currentTime.AddDate(0, 0, -11).Format("20060102")
 	key := "userActive" + dayTime
-	fmt.Println("saveactive", key)
-	redisClient.SAdd(key, userId)
-}
 
-func GetDayActiveCount(redisClient *redis.Client, searchDay string) int {
-	key := "userActive" + searchDay
-	count, err := redisClient.SCard(key).Result()
-	fmt.Println("getDayActiveCount", key, count)
+	_, err := redisClient.Do("SADD", key, userId)
 	if err != nil {
-		fmt.Println("getDayActiveCount err: ", err)
-		return 0
+		fmt.Println("SaveActive err: ", err)
 	}
-
-	res := int(count)
-	return res
 }
 
-func GetDayRangeCount(redisClient *redis.Client, startOffset int, endOffset int) int {
+// 获取打点区间数据
+func GetRangeCount(startOffset int, endOffset int) int {
 	var rangeArr []string
-	var setRes []string
+	redisClient := ConnectRedis()
+	defer redisClient.Close()
 	currentTime := time.Now()
 
 	for i := startOffset; i >= endOffset; i-- {
@@ -39,18 +42,11 @@ func GetDayRangeCount(redisClient *redis.Client, startOffset int, endOffset int)
 		rangeArr = append(rangeArr, "userActive"+dayTime)
 	}
 
-	for i := startOffset - endOffset; i > 0; i-- {
-		unionSet, err := redisClient.SUnion(rangeArr[i]).Result()
-		if err != nil {
-			fmt.Println("GetDayRangeCount err: ", rangeArr[i], err)
-			return 0
-		}
-		setRes = unionSet
+	union, err := redis.Strings(redisClient.Do("SUNION", redis.Args{}.AddFlat(rangeArr)...))
+	if err != nil {
+		fmt.Println("GetDayRangeCount err: ", err)
+		return 0
 	}
 
-	fmt.Println("SCard", setRes)
-
-	// res := len(setRes)
-	// return res
-	return 0
+	return len(union)
 }

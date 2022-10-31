@@ -83,32 +83,23 @@ func GetFccUPrice() (string, string) {
 }
 
 func getUserBigData() UserBigData {
-
-	var redisClient = connectRedis()
 	var data = UserBigData{}
-	// data.Total = GetAllRegisteredCount(redisClient)
-	currentTime := time.Now()
-	day1Key := currentTime.Format("20060102")
-	day2Key := currentTime.AddDate(0, 0, -1).Format("20060102")
-
-	day1 := active.GetDayActiveCount(redisClient, day1Key)
-	day2 := active.GetDayActiveCount(redisClient, day2Key) // 日活
-	week1 := active.GetDayRangeCount(redisClient, 0, -6)   // 昨天日活
-	// week1 := GetWeekActiveCount(redisClient, -1)   // 上周周活
-	// week2 := GetWeekActiveCount(redisClient, -2)   // 上上周周活
-	// month1 := GetMonthActiveCount(redisClient, -1) // 上月月活
-	// month2 := GetMonthActiveCount(redisClient, -2) // 上上月月活
-
-	fmt.Println("count: ", day1)
+	day1 := active.GetRangeCount(0, 0)        //日活
+	day2 := active.GetRangeCount(-1, -1)      // 昨日日活
+	week1 := active.GetRangeCount(0, -6)      // 前7天日活
+	week2 := active.GetRangeCount(-7, -13)    // 上7天日活
+	month1 := active.GetRangeCount(0, -29)    // 前30天日活
+	month2 := active.GetRangeCount(-29, -58)  // 前60天日活
+	total := active.GetRangeCount(0, -365*10) // 总访问量
 
 	data.DayIncrease = day1 - day2
 	data.DayActive = day1
 	data.DayActiveIncrease24H = day1 - day2
 	data.WeekActive = week1
-	// data.WeekActiveIncrease24H = week1 - week2
-	// data.MonthActive = month1
-	// data.MonthActiveIncrease24H = month1 - month2
-
+	data.WeekActiveIncrease24H = week1 - week2
+	data.MonthActive = month1
+	data.MonthActiveIncrease24H = month1 - month2
+	data.Total = total
 	return data
 }
 
@@ -366,8 +357,7 @@ func startGin() {
 		}
 
 		// 事件埋入redis
-		redisClient := connectRedis()
-		active.SaveActive(redisClient, data.UserId)
+		active.SaveActive(data.UserId)
 
 		c.JSON(http.StatusOK, "ok")
 	})
