@@ -4,6 +4,7 @@ import (
 	// "crypto/tls"
 
 	"encoding/json"
+	"fcc/active"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -17,6 +18,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kirinlabs/HttpRequest"
 )
+
+// 初始化redis pool
+func init() {
+
+}
 
 func main() {
 	// uniswapFCCToken()
@@ -80,38 +86,28 @@ func getUserBigData() UserBigData {
 
 	var redisClient = connectRedis()
 	var data = UserBigData{}
-	data.Total = GetAllRegisteredCount(redisClient)
+	// data.Total = GetAllRegisteredCount(redisClient)
+	currentTime := time.Now()
+	day1Key := currentTime.Format("20060102")
+	day2Key := currentTime.AddDate(0, 0, -1).Format("20060102")
 
-	day1 := GetDayActiveCount(redisClient, -1)     // 昨天日活
-	day2 := GetDayActiveCount(redisClient, -2)     // 前天日活
-	week1 := GetWeekActiveCount(redisClient, -1)   // 上周周活
-	week2 := GetWeekActiveCount(redisClient, -2)   // 上上周周活
-	month1 := GetMonthActiveCount(redisClient, -1) // 上月月活
-	month2 := GetMonthActiveCount(redisClient, -2) // 上上月月活
+	day1 := active.GetDayActiveCount(redisClient, day1Key)
+	day2 := active.GetDayActiveCount(redisClient, day2Key) // 日活
+	week1 := active.GetDayRangeCount(redisClient, 0, -6)   // 昨天日活
+	// week1 := GetWeekActiveCount(redisClient, -1)   // 上周周活
+	// week2 := GetWeekActiveCount(redisClient, -2)   // 上上周周活
+	// month1 := GetMonthActiveCount(redisClient, -1) // 上月月活
+	// month2 := GetMonthActiveCount(redisClient, -2) // 上上月月活
 
-	// TODO remove for test
-	// if day1 < 50 {
-	// 	day1 = 100
-	// 	day2 = 80
-	// }
-	// if week1 < 100 {
-	// 	day1 = 300
-	// 	day2 = 200
-	// }
-	// if month1 < 200 {
-	// 	month1 = 500
-	// 	month2 = 300
-	// }
+	fmt.Println("count: ", day1)
 
-	fmt.Println("count: ", day1, day2, week1, week2, month1, month2)
-
-	data.DayIncrease = 200
+	data.DayIncrease = day1 - day2
 	data.DayActive = day1
 	data.DayActiveIncrease24H = day1 - day2
 	data.WeekActive = week1
-	data.WeekActiveIncrease24H = week1 - week2
-	data.MonthActive = month1
-	data.MonthActiveIncrease24H = month1 - month2
+	// data.WeekActiveIncrease24H = week1 - week2
+	// data.MonthActive = month1
+	// data.MonthActiveIncrease24H = month1 - month2
 
 	return data
 }
@@ -371,7 +367,7 @@ func startGin() {
 
 		// 事件埋入redis
 		redisClient := connectRedis()
-		saveEventData(redisClient, data)
+		active.SaveActive(redisClient, data.UserId)
 
 		c.JSON(http.StatusOK, "ok")
 	})
@@ -408,7 +404,7 @@ func startGin() {
 
 		// 	// TODO 转换返回值
 		// }
-		data.Freechat.NowPrice, data.Freechat.MarketValue = GetFccUPrice()
+		// data.Freechat.NowPrice, data.Freechat.MarketValue = GetFccUPrice()
 
 		fmt.Println("GetFccUPrice 2: ", data.Freechat.NowPrice)
 
@@ -423,7 +419,7 @@ func startGin() {
 		var result map[string]interface{}
 		json.Unmarshal(jsonBytes, &result)
 
-		fmt.Println("operate/all : ", result)
+		// fmt.Println("operate/all : ", result)
 		c.JSON(http.StatusOK, result)
 
 	})
