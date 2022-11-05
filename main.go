@@ -441,7 +441,7 @@ func startGin() {
 		var res = EquitytokenRes{}
 		var _, MarketValue = GetFccUPrice()
 		// TODO 转换返回值
-		data.Hold = 700000000
+		// data.Hold = 700000000
 		// data.OwnerNum = 4400404
 		data.MarketValue = MarketValue
 
