@@ -1,0 +1,14 @@
+{
+    "editor.detectIndentation": false,
+    "editor.tabSize": 4,
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "11",
+            "database": "/Users/dannygguo/Downloads/trcDB (1).db"
+        }
+    ]
+}
