@@ -4,12 +4,21 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 )
 
-// redigo连接数据库，后期改pool
+// redigo连接主数据库
 func ConnectRedis() redis.Conn {
-	client, err := redis.Dial("tcp", "localhost:6379", redis.DialPassword(""))
+	client, err := redis.Dial("tcp", "blockchaindata-ro.bllj2c.ng.0001.apne1.cache.amazonaws.com:6379", redis.DialPassword(""))
+	if err != nil {
+		panic(err)
+	}
+	return client
+}
+
+// redigo连接从数据库
+func ConnectSlaveRedis() redis.Conn {
+	client, err := redis.Dial("tcp", "blockchaindata-001.bllj2c.0001.apne1.cache.amazonaws.com:6379", redis.DialPassword(""))
 	if err != nil {
 		panic(err)
 	}
@@ -33,7 +42,7 @@ func SaveActive(userId string) {
 // 获取打点区间数据
 func GetRangeCount(startOffset int, endOffset int) int {
 	var rangeArr []string
-	redisClient := ConnectRedis()
+	redisClient := ConnectSlaveRedis()
 	defer redisClient.Close()
 	currentTime := time.Now()
 
