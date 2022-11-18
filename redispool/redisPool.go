@@ -14,7 +14,7 @@
 // 		MaxActive:   0,
 // 		IdleTimeout: 300,
 // 		Dial: func() (redis.Conn, error) {
-// 			return redis.Dial("tcp", "blockchaindata-ro.bllj2c.ng.0001.apne1.cache.amazonaws.com:6379")
+// 			return redis.Dial("tcp", "blockchaindata.bllj2c.ng.0001.apne1.cache.amazonaws.com:6379")
 // 		},
 // 	}
 // }

@@ -11,7 +11,7 @@ import (
 // 运营数据 - 事件埋点相关接口
 func connectRedis() *redis.Client {
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "blockchaindata-ro.bllj2c.ng.0001.apne1.cache.amazonaws.com:6379",
+		Addr:     "blockchaindata.bllj2c.ng.0001.apne1.cache.amazonaws.com:6379",
 		Password: "",
 		DB:       0,
 	})
@@ -21,7 +21,7 @@ func connectRedis() *redis.Client {
 // 连接从服务
 func ConnectSlaveRedis() *redis.Client {
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "blockchaindata-001.bllj2c.0001.apne1.cache.amazonaws.com:6379",
+		Addr:     "blockchaindata-ro.bllj2c.ng.0001.apne1.cache.amazonaws.com:6379",
 		Password: "",
 		DB:       0,
 	})
