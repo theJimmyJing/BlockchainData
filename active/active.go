@@ -42,7 +42,7 @@ func SaveActive(userId string) {
 // 获取打点区间数据
 func GetRangeCount(startOffset int, endOffset int) int {
 	var rangeArr []string
-	redisClient := connectRedis()
+	redisClient := ConnectRedis()
 	defer redisClient.Close()
 	currentTime := time.Now()
 
