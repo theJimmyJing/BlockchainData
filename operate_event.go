@@ -9,24 +9,24 @@ import (
 )
 
 // 运营数据 - 事件埋点相关接口
-func connectRedis() *redis.Client {
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "blockchaindata.bllj2c.ng.0001.apne1.cache.amazonaws.com:6379",
+func connectRedis() *redis.ClusterClient {
+	redisClient := redis.NewClusterClient(&redis.ClusterOptions{
+		Addrs:    []string{"blockchain.bllj2c.clustercfg.apne1.cache.amazonaws.com:6379"},
 		Password: "",
-		DB:       0,
+		// DB:       0,
 	})
 	return redisClient
 }
 
 // 连接从服务
-func ConnectSlaveRedis() *redis.Client {
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "blockchaindata-ro.bllj2c.ng.0001.apne1.cache.amazonaws.com:6379",
-		Password: "",
-		DB:       0,
-	})
-	return redisClient
-}
+// func ConnectSlaveRedis() *redis.Client {
+// 	redisClient := redis.NewClient(&redis.Options{
+// 		Addr:     "blockchain.bllj2c.clustercfg.apne1.cache.amazonaws.com:6379",
+// 		Password: "",
+// 		DB:       0,
+// 	})
+// 	return redisClient
+// }
 
 func testKeys(key string) {
 	redisClient := connectRedis()

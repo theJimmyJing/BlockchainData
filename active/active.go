@@ -9,7 +9,7 @@ import (
 
 // redigo连接主数据库
 func ConnectRedis() redis.Conn {
-	client, err := redis.Dial("tcp", "blockchaindata.bllj2c.ng.0001.apne1.cache.amazonaws.com:6379", redis.DialPassword(""))
+	client, err := redis.Dial("tcp", "blockchain.bllj2c.clustercfg.apne1.cache.amazonaws.com:6379", redis.DialPassword(""))
 	if err != nil {
 		panic(err)
 	}
@@ -17,13 +17,13 @@ func ConnectRedis() redis.Conn {
 }
 
 // redigo连接从数据库
-func ConnectSlaveRedis() redis.Conn {
-	client, err := redis.Dial("tcp", "blockchaindata-ro.bllj2c.ng.0001.apne1.cache.amazonaws.com:6379", redis.DialPassword(""))
-	if err != nil {
-		panic(err)
-	}
-	return client
-}
+// func connectRedis() redis.Conn {
+// 	client, err := redis.Dial("tcp", "blockchain.bllj2c.clustercfg.apne1.cache.amazonaws.com:6379", redis.DialPassword(""))
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	return client
+// }
 
 // 保存event事件
 func SaveActive(userId string) {
@@ -42,7 +42,7 @@ func SaveActive(userId string) {
 // 获取打点区间数据
 func GetRangeCount(startOffset int, endOffset int) int {
 	var rangeArr []string
-	redisClient := ConnectSlaveRedis()
+	redisClient := connectRedis()
 	defer redisClient.Close()
 	currentTime := time.Now()
 

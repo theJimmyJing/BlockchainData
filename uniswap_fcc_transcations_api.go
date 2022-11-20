@@ -51,7 +51,7 @@ func uniswap_fcc_transactions() {
 }
 
 // save FccTransactions to redis
-func saveFccTransactionsData(redisClient *redis.Client, data string) {
+func saveFccTransactionsData(redisClient *redis.ClusterClient, data string) {
 	Fcc_Transactions_KEY := "fcc_transactions"
 	//转换成字符串
 	infoErrorStatus := redisClient.Set(Fcc_Transactions_KEY, data, 0).Err() //设置过期时间- 不过期
@@ -62,7 +62,7 @@ func saveFccTransactionsData(redisClient *redis.Client, data string) {
 	}
 }
 
-func getCachedFccTransactionsData(redisClient *redis.Client) FccTranscationsResp {
+func getCachedFccTransactionsData(redisClient *redis.ClusterClient) FccTranscationsResp {
 	Fcc_Transactions_KEY := "fcc_transactions"
 	getInfo, getinfoErr := redisClient.Get(Fcc_Transactions_KEY).Result()
 
@@ -83,7 +83,7 @@ func getCachedFccTransactionsData(redisClient *redis.Client) FccTranscationsResp
 }
 
 // 获取FCC与指定token(id)的交易
-func getTransactionsWithToken(redisClient *redis.Client, tokenId string) FccTranscationsResp {
+func getTransactionsWithToken(redisClient *redis.ClusterClient, tokenId string) FccTranscationsResp {
 	dataCached := getCachedFccTransactionsData(redisClient)
 
 	transactions := []FccTransactions{}
