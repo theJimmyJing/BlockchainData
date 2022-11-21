@@ -3,11 +3,13 @@ package active
 import (
 	"fcc/config"
 	"fmt"
+	"strconv"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
 	redigo "github.com/gomodule/redigo/redis"
 )
+
+const ActiveUserKey = "activeUser"
 
 // redigo连接主数据库
 func ConnectRedis() redigo.Conn {
@@ -24,14 +26,10 @@ func SaveActive(userId string) {
 	defer redisClient.Close()
 	currentTime := time.Now()
 	dayTime := currentTime.Format("20060102")
-	key := "userActive" + dayTime
+	key := userId + dayTime
+	score, _ := strconv.Atoi(dayTime)
 
-	_, errCluster := redisClient.Do("CLUSTER KEYSLOT", "userActive"+dayTime)
-	if errCluster != nil {
-		fmt.Println("SaveActive err: ", errCluster)
-	}
-
-	_, err := redisClient.Do("SADD", key, userId)
+	_, err := redisClient.Do("ZADD", ActiveUserKey, score, key)
 	if err != nil {
 		fmt.Println("SaveActive err: ", err)
 	}
@@ -39,21 +37,29 @@ func SaveActive(userId string) {
 
 // 获取打点区间数据
 func GetRangeCount(startOffset int, endOffset int) int {
-	var rangeArr []string
+	var rangeArr []int
 	redisClient := ConnectRedis()
 	defer redisClient.Close()
 	currentTime := time.Now()
 
 	for i := startOffset; i >= endOffset; i-- {
-		dayTime := currentTime.AddDate(0, 0, i).Format("20060102")
-		rangeArr = append(rangeArr, "userActive"+dayTime)
+		dayTime, _ := strconv.Atoi(currentTime.AddDate(0, 0, i).Format("20060102"))
+		rangeArr = append(rangeArr, dayTime-1)
+		rangeArr = append(rangeArr, dayTime)
 	}
-
-	union, err := redis.Strings(redisClient.Do("SUNION", redis.Args{}.AddFlat(rangeArr)...))
+	un, err := redisClient.Do("ZCOUNT", ActiveUserKey, rangeArr[0], rangeArr[1])
 	if err != nil {
 		fmt.Println("GetDayRangeCount err: ", err)
 		return 0
 	}
 
-	return len(union)
+	switch un.(type) {
+	case int:
+		return int(un.(uint))
+		break
+	default:
+		return 0
+		break
+	}
+	return 0
 }

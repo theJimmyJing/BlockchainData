@@ -2,8 +2,8 @@ package config
 
 import (
 	"io/ioutil"
-	"os"
 	"path/filepath"
+	"runtime"
 
 	"gopkg.in/yaml.v3"
 )
@@ -24,9 +24,11 @@ type blockchainDataConfig struct {
 }
 
 func init() {
-	binary, _ := os.Executable()
-	root, _ := filepath.EvalSymlinks(filepath.Dir(binary))
-	cfgName := root + "/config/config.yaml"
+	//binary, _ := os.Executable()
+	//root, _ := filepath.EvalSymlinks(filepath.Dir(binary))
+	_, b, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(b), "")
+	cfgName := root + "/config.yaml"
 
 	bytes, err := ioutil.ReadFile(cfgName)
 	if err != nil {
