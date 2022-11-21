@@ -421,9 +421,9 @@ func startGin() {
 
 		var dataResult FccTranscationsResp
 		if tokenId == "" {
-			dataResult = getCachedFccTransactionsData(connectRedis())
+			dataResult = getCachedFccTransactionsData(active.ConnectRedis())
 		} else {
-			dataResult = getTransactionsWithToken(connectRedis(), tokenId)
+			dataResult = getTransactionsWithToken(active.ConnectRedis(), tokenId)
 		}
 
 		c.JSON(http.StatusOK, dataResult)

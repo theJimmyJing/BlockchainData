@@ -2,16 +2,19 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fcc/active"
 	"fmt"
 	"log"
 	"os/exec"
 	"time"
 
-	"github.com/go-redis/redis/v7"
+	"github.com/go-redis/redis/v9"
 )
 
 var FCC_TOKEN_ID = "0x171b1daefac13a0a3524fcb6beddc7b31e58e079"
+var ctx = context.Background()
 
 // 定时更新交易记录
 func uniswap_fcc_transactions_timer() {
@@ -46,15 +49,15 @@ func uniswap_fcc_transactions() {
 	// fmt.Println("FccTransactions errStr ：", errStr)
 	// fmt.Println("------------------------")
 
-	redisClient := connectRedis()
+	redisClient := active.ConnectRedis()
 	saveFccTransactionsData(redisClient, outStr)
 }
 
 // save FccTransactions to redis
-func saveFccTransactionsData(redisClient *redis.ClusterClient, data string) {
+func saveFccTransactionsData(redisClient redis.UniversalClient, data string) {
 	Fcc_Transactions_KEY := "fcc_transactions"
 	//转换成字符串
-	infoErrorStatus := redisClient.Set(Fcc_Transactions_KEY, data, 0).Err() //设置过期时间- 不过期
+	infoErrorStatus := redisClient.Set(ctx, Fcc_Transactions_KEY, data, 0).Err() //设置过期时间- 不过期
 	if infoErrorStatus != nil {
 		fmt.Println("saveFccTransactionsData failed：", infoErrorStatus)
 		// } else {
@@ -62,9 +65,9 @@ func saveFccTransactionsData(redisClient *redis.ClusterClient, data string) {
 	}
 }
 
-func getCachedFccTransactionsData(redisClient *redis.ClusterClient) FccTranscationsResp {
+func getCachedFccTransactionsData(redisClient redis.UniversalClient) FccTranscationsResp {
 	Fcc_Transactions_KEY := "fcc_transactions"
-	getInfo, getinfoErr := redisClient.Get(Fcc_Transactions_KEY).Result()
+	getInfo, getinfoErr := redisClient.Get(ctx, Fcc_Transactions_KEY).Result()
 
 	dataCached := FccTranscationsResp{}
 	if getinfoErr != nil {
@@ -83,7 +86,7 @@ func getCachedFccTransactionsData(redisClient *redis.ClusterClient) FccTranscati
 }
 
 // 获取FCC与指定token(id)的交易
-func getTransactionsWithToken(redisClient *redis.ClusterClient, tokenId string) FccTranscationsResp {
+func getTransactionsWithToken(redisClient redis.UniversalClient, tokenId string) FccTranscationsResp {
 	dataCached := getCachedFccTransactionsData(redisClient)
 
 	transactions := []FccTransactions{}
@@ -118,7 +121,7 @@ func getTransactionsWithToken(redisClient *redis.ClusterClient, tokenId string) 
 
 func getCachedFccTransactions(redisClient *redis.Client, symbol string, id string) FccTranscationsResp {
 	Fcc_Transactions_KEY := "fcc_transactions"
-	getInfo, getinfoErr := redisClient.Get(Fcc_Transactions_KEY).Result()
+	getInfo, getinfoErr := redisClient.Get(ctx, Fcc_Transactions_KEY).Result()
 
 	dataCache := FccTranscationsResp{}
 	if getinfoErr != nil {

@@ -1,17 +1,13 @@
 package main
 
-import (
-	"github.com/go-redis/redis/v7"
-)
-
 // 运营数据 - 事件埋点相关接口
-func connectRedis() *redis.ClusterClient {
-	redisClient := redis.NewClusterClient(&redis.ClusterOptions{
-		Addrs:    []string{"blockchaindata.ad9n4e.clustercfg.apse1.cache.amazonaws.com:6379"},
-		Password: "",
-	})
-	return redisClient
-}
+// func connectRedis() *redis.ClusterClient {
+// 	redisClient := redis.NewClusterClient(&redis.ClusterOptions{
+// 		Addrs:    []string{"blockchaindata.ad9n4e.clustercfg.apse1.cache.amazonaws.com:6379"},
+// 		Password: "",
+// 	})
+// 	return redisClient
+// }
 
 // 连接从服务
 // func ConnectSlaveRedis() *redis.Client {
