@@ -6,18 +6,27 @@ import (
 	"strconv"
 	"time"
 
-	redigo "github.com/gomodule/redigo/redis"
+	"github.com/go-redis/redis/v7"
 )
 
 const ActiveUserKey = "activeUser"
 
 // redigo连接主数据库
-func ConnectRedis() redigo.Conn {
-	client, err := redigo.Dial("tcp", config.BlockchainDataConfig.Redis.DBAddress[0], redigo.DialPassword(config.BlockchainDataConfig.Redis.DBPassWord))
-	if err != nil {
-		panic(err)
-	}
-	return client
+// func ConnectRedis() redigo.Conn {
+// 	client, err := redigo.Dial("tcp", config.BlockchainDataConfig.Redis.DBAddress[0], redigo.DialPassword(config.BlockchainDataConfig.Redis.DBPassWord))
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	return client
+// }
+
+func ConnectRedis() *redis.ClusterClient {
+	rdb := redis.NewClusterClient(&redis.ClusterOptions{
+		Addrs:    []string{config.BlockchainDataConfig.Redis.DBAddress[0]},
+		Password: config.BlockchainDataConfig.Redis.DBPassWord,
+	})
+
+	return rdb
 }
 
 // 保存event事件
@@ -27,9 +36,9 @@ func SaveActive(userId string) {
 	currentTime := time.Now()
 	dayTime := currentTime.Format("20060102")
 	key := userId + dayTime
-	score, _ := strconv.Atoi(dayTime)
+	score, _ := strconv.ParseFloat(dayTime, 64)
 
-	_, err := redisClient.Do("ZADD", ActiveUserKey, score, key)
+	_, err := redisClient.ZAdd(ActiveUserKey, &redis.Z{Score: score, Member: key}).Result()
 	if err != nil {
 		fmt.Println("SaveActive err: ", err)
 	}
@@ -44,22 +53,18 @@ func GetRangeCount(startOffset int, endOffset int) int {
 
 	for i := startOffset; i >= endOffset; i-- {
 		dayTime, _ := strconv.Atoi(currentTime.AddDate(0, 0, i).Format("20060102"))
+
 		rangeArr = append(rangeArr, dayTime-1)
 		rangeArr = append(rangeArr, dayTime)
 	}
-	un, err := redisClient.Do("ZCOUNT", ActiveUserKey, rangeArr[0], rangeArr[1])
+	min := strconv.Itoa(rangeArr[0])
+	max := strconv.Itoa(rangeArr[1])
+	un, err := redisClient.ZCount(ActiveUserKey, min, max).Result()
+	// un, err := redisClient.Do("ZCOUNT", ActiveUserKey, rangeArr[0], rangeArr[1])
 	if err != nil {
 		fmt.Println("GetDayRangeCount err: ", err)
 		return 0
 	}
 
-	switch un.(type) {
-	case int64:
-		return int(un.(int64))
-		break
-	default:
-		return 0
-		break
-	}
-	return 0
+	return int(un)
 }
