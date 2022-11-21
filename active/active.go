@@ -55,7 +55,7 @@ func GetRangeCount(startOffset int, endOffset int) int {
 
 	switch un.(type) {
 	case int64:
-		return int(un.(uint))
+		return int(un.(int64))
 		break
 	default:
 		return 0
