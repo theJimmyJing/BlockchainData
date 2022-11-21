@@ -1,30 +1,34 @@
 package active
 
 import (
+	"context"
 	"fcc/config"
 	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/go-redis/redis/v7"
+	"github.com/go-redis/redis/v9"
 )
 
 const ActiveUserKey = "activeUser"
 
-// redigo连接主数据库
-// func ConnectRedis() redigo.Conn {
-// 	client, err := redigo.Dial("tcp", config.BlockchainDataConfig.Redis.DBAddress[0], redigo.DialPassword(config.BlockchainDataConfig.Redis.DBPassWord))
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	return client
-// }
+var ctx = context.Background()
 
-func ConnectRedis() *redis.ClusterClient {
-	rdb := redis.NewClusterClient(&redis.ClusterOptions{
-		Addrs:    []string{config.BlockchainDataConfig.Redis.DBAddress[0]},
-		Password: config.BlockchainDataConfig.Redis.DBPassWord,
-	})
+func ConnectRedis() redis.UniversalClient {
+	var rdb redis.UniversalClient
+	if config.BlockchainDataConfig.Redis.EnableCluster {
+		rdb = redis.NewClusterClient(&redis.ClusterOptions{
+			Addrs:    config.BlockchainDataConfig.Redis.DBAddress,
+			PoolSize: 50,
+		})
+	} else {
+		rdb = redis.NewClient(&redis.Options{
+			Addr:     config.BlockchainDataConfig.Redis.DBAddress[0],
+			Password: config.BlockchainDataConfig.Redis.DBPassWord, // no password set
+			DB:       0,                                            // use default DB
+			PoolSize: 100,                                          // 连接池大小
+		})
+	}
 
 	return rdb
 }
@@ -38,7 +42,7 @@ func SaveActive(userId string) {
 	key := userId + dayTime
 	score, _ := strconv.ParseFloat(dayTime, 64)
 
-	_, err := redisClient.ZAdd(ActiveUserKey, &redis.Z{Score: score, Member: key}).Result()
+	_, err := redisClient.ZAdd(ctx, ActiveUserKey, redis.Z{Score: score, Member: key}).Result()
 	if err != nil {
 		fmt.Println("SaveActive err: ", err)
 	}
@@ -59,7 +63,7 @@ func GetRangeCount(startOffset int, endOffset int) int {
 	}
 	min := strconv.Itoa(rangeArr[0])
 	max := strconv.Itoa(rangeArr[1])
-	un, err := redisClient.ZCount(ActiveUserKey, min, max).Result()
+	un, err := redisClient.ZCount(ctx, ActiveUserKey, min, max).Result()
 	// un, err := redisClient.Do("ZCOUNT", ActiveUserKey, rangeArr[0], rangeArr[1])
 	if err != nil {
 		fmt.Println("GetDayRangeCount err: ", err)
