@@ -11,7 +11,7 @@ import (
 // 运营数据 - 事件埋点相关接口
 func connectRedis() *redis.ClusterClient {
 	redisClient := redis.NewClusterClient(&redis.ClusterOptions{
-		Addrs:    []string{"blockchain.bllj2c.clustercfg.apne1.cache.amazonaws.com:6379"},
+		Addrs:    []string{"blockchaindata.ad9n4e.clustercfg.apse1.cache.amazonaws.com:6379"},
 		Password: "",
 		// DB:       0,
 	})
@@ -21,7 +21,7 @@ func connectRedis() *redis.ClusterClient {
 // 连接从服务
 // func ConnectSlaveRedis() *redis.Client {
 // 	redisClient := redis.NewClient(&redis.Options{
-// 		Addr:     "blockchain.bllj2c.clustercfg.apne1.cache.amazonaws.com:6379",
+// 		Addr:     "blockchaindata.ad9n4e.clustercfg.apse1.cache.amazonaws.com:6379",
 // 		Password: "",
 // 		DB:       0,
 // 	})

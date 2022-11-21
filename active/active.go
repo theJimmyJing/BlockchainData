@@ -9,7 +9,7 @@ import (
 
 // redigo连接主数据库
 func ConnectRedis() redis.Conn {
-	client, err := redis.Dial("tcp", "blockchain.bllj2c.clustercfg.apne1.cache.amazonaws.com:6379", redis.DialPassword(""))
+	client, err := redis.Dial("tcp", "blockchaindata.ad9n4e.clustercfg.apse1.cache.amazonaws.com:6379", redis.DialPassword(""))
 	if err != nil {
 		panic(err)
 	}
@@ -18,7 +18,7 @@ func ConnectRedis() redis.Conn {
 
 // redigo连接从数据库
 // func connectRedis() redis.Conn {
-// 	client, err := redis.Dial("tcp", "blockchain.bllj2c.clustercfg.apne1.cache.amazonaws.com:6379", redis.DialPassword(""))
+// 	client, err := redis.Dial("tcp", "blockchaindata.ad9n4e.clustercfg.apse1.cache.amazonaws.com:6379", redis.DialPassword(""))
 // 	if err != nil {
 // 		panic(err)
 // 	}
