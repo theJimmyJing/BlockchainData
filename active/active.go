@@ -50,21 +50,14 @@ func SaveActive(userId string) {
 
 // 获取打点区间数据
 func GetRangeCount(startOffset int, endOffset int) int {
-	var rangeArr []int
 	redisClient := ConnectRedis()
 	defer redisClient.Close()
 	currentTime := time.Now()
 
-	for i := startOffset; i >= endOffset; i-- {
-		dayTime, _ := strconv.Atoi(currentTime.AddDate(0, 0, i).Format("20060102"))
+	start, _ := strconv.Atoi(currentTime.AddDate(0, 0, startOffset).Format("20060102"))
+	end, _ := strconv.Atoi(currentTime.AddDate(0, 0, endOffset).Format("20060102"))
+	un, err := redisClient.ZCount(ctx, ActiveUserKey, strconv.Itoa(end), strconv.Itoa(start)).Result()
 
-		rangeArr = append(rangeArr, dayTime-1)
-		rangeArr = append(rangeArr, dayTime)
-	}
-	min := strconv.Itoa(rangeArr[0])
-	max := strconv.Itoa(rangeArr[1])
-	un, err := redisClient.ZCount(ctx, ActiveUserKey, min, max).Result()
-	// un, err := redisClient.Do("ZCOUNT", ActiveUserKey, rangeArr[0], rangeArr[1])
 	if err != nil {
 		fmt.Println("GetDayRangeCount err: ", err)
 		return 0
