@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"runtime"
@@ -32,9 +33,9 @@ func init() {
 
 	bytes, err := ioutil.ReadFile(cfgName)
 	if err != nil {
-		panic(err.Error())
+		fmt.Println(err.Error())
 	}
 	if err = yaml.Unmarshal(bytes, &BlockchainDataConfig); err != nil {
-		panic(err.Error())
+		fmt.Println(err.Error())
 	}
 }

@@ -1,8 +1,6 @@
 package main
 
 import (
-	// "crypto/tls"
-
 	"encoding/json"
 	"fcc/active"
 	"fmt"
@@ -16,7 +14,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/kirinlabs/HttpRequest"
 )
 
 // 初始化redis pool
@@ -25,25 +22,10 @@ func init() {
 }
 
 func main() {
-	// uniswapFCCToken()
-	// EtherscanAddrTransactions("0xA8A1D9510136661Bd042Bb24D2e9596920894361")
-	// uniswap_fcc_transactions()
 	// 将每分钟更新FCC币的交易记录
 	go uniswap_fcc_transactions_timer()
 
-	// operateAllData()
-	// startServer()
-	// now := time.Now().UnixNano()
-	// time.Sleep(time.Second)
-	// now2 := time.Now().UnixNano()
-	// fmt.Println(now2 - now)
-
-	// testEvent()
 	startGin()
-	// startServerV3()
-	// startServerV4()
-
-	// conneRedis()
 }
 
 // 获取FCC U价格, 总价格 18位精度
@@ -206,37 +188,6 @@ func ParseResponse(response *http.Response) (map[string]interface{}, error) {
 	return result, err
 }
 
-func startServerV3() {
-	router := gin.Default()
-	router.GET("/api/v5/market/index-tickers", func(c *gin.Context) {
-		// var i IndexTickers
-		// c.ShouldBind(&i)
-		rq := c.Request.URL.RawQuery
-
-		req, err := http.NewRequest("GET", "https://www.okx.com/api/v5/market/index-tickers?"+rq, nil)
-		if err != nil {
-			log.Print(err)
-			os.Exit(1)
-		}
-
-		// q := req.URL.Query()
-		// q.Add("api_key", "key_from_environment_or_flag")
-		// q.Add("another_thing", "foo & bar")
-		// req.URL.RawQuery = q.Encode()
-
-		fmt.Println(req.URL.String())
-		// Output:
-		// http://api.themoviedb.org/3/tv/popular?another_thing=foo+%26+bar&api_key=key_from_environment_or_flag
-		var resp *http.Response
-
-		resp, err = http.DefaultClient.Do(req)
-		if err != nil {
-			log.Print(err)
-		}
-		defer resp.Body.Close()
-	})
-}
-
 type OkData struct {
 	InstIdMap map[string]map[string]interface{}
 	// InstTime    uint64
@@ -365,10 +316,6 @@ func startGin() {
 	// 运营数据
 	router.GET("/api/v5/operate/all", func(c *gin.Context) {
 		var data = OperateData{}
-		// FCC Token
-		// fccToken := uniswapFCCToken()
-		// if fccToken != (UniswapToken{}) {
-		// 	fmt.Println("fccToken: ", fccToken)
 
 		data.Freechat.TotalEarn = "-"
 		data.Freechat.DayEarn = "-"
@@ -409,9 +356,7 @@ func startGin() {
 		var result map[string]interface{}
 		json.Unmarshal(jsonBytes, &result)
 
-		// fmt.Println("operate/all : ", result)
 		c.JSON(http.StatusOK, result)
-
 	})
 
 	// 运营数据 - 获取全部fcc交易记录
@@ -465,36 +410,35 @@ func startGin() {
 
 var tokenList string
 
-func syncData() {
-	fmt.Println("start sync token list ")
-	origin := analysisJson()
-	r := getAbi(&origin)
-	fmt.Printf("first result ---------\n %+v", *r)
-	a := combileDetails(r)
-	fmt.Printf("second result ---------\n %+v", *r)
-	file, _ := json.MarshalIndent(a, "", " ")
-	tokenList = string(file)
-	_ = ioutil.WriteFile("result.json", file, 0644)
-
-}
+// func syncData() {
+// 	fmt.Println("start sync token list ")
+// 	origin := analysisJson()
+// 	r := getAbi(&origin)
+// 	fmt.Printf("first result ---------\n %+v", *r)
+// 	a := combileDetails(r)
+// 	fmt.Printf("second result ---------\n %+v", *r)
+// 	file, _ := json.MarshalIndent(a, "", " ")
+// 	tokenList = string(file)
+// 	_ = ioutil.WriteFile("result.json", file, 0644)
+// }
 
 type IndexTickers struct {
 	InstId   string `form:"instId" json:"instId"`
 	QuoteCcy string `form:"quoteCcy" json:"quoteCcy"`
 }
 
-func startServer() {
-	engine := gin.New()
-	vi := engine.Group("/api")
-	vi.Any("/v5/market/index-tickers", WithHeader)
-	// GET /api/v5/market/exchange-rate
-	vi.Any("/v5/market/exchange-rate", WithHeader)
+// func startServer() {
+// 	engine := gin.New()
+// 	vi := engine.Group("/api")
+// 	vi.Any("/v5/market/index-tickers", WithHeader)
+// 	// GET /api/v5/market/exchange-rate
+// 	vi.Any("/v5/market/exchange-rate", WithHeader)
 
-	err := engine.Run(":8341")
-	if err != nil {
-		fmt.Println(err)
-	}
-}
+// 	err := engine.Run(":8341")
+// 	if err != nil {
+// 		fmt.Println(err)
+// 	}
+// }
 
 const Host = "www.okx.com"
 
@@ -506,75 +450,75 @@ var simpleHostProxy = httputil.ReverseProxy{
 	},
 }
 
-func WithHeader(ctx *gin.Context) {
+// func WithHeader(ctx *gin.Context) {
 
-	// ctx.Request.Header.Add("requester-uid", "id")
-	simpleHostProxy.ServeHTTP(ctx.Writer, ctx.Request)
-}
+// 	// ctx.Request.Header.Add("requester-uid", "id")
+// 	simpleHostProxy.ServeHTTP(ctx.Writer, ctx.Request)
+// }
 
-func combileDetails(o *ABIReq) AllRsp {
-	time.Sleep(1000)
-	req := HttpRequest.NewRequest()
-	// 设置超时时间，不设置时，默认30s
-	req.SetTimeout(5)
-	var allRsp AllRsp
-	allRsp.AllResult = make([]AllResult, 0)
-	for i, t := range o.Tokens {
-		time.Sleep(1 * time.Second)
-		fmt.Println("i: = ", i)
-		var allResult AllResult
+// func combileDetails(o *ABIReq) AllRsp {
+// 	time.Sleep(1000)
+// 	req := HttpRequest.NewRequest()
+// 	// 设置超时时间，不设置时，默认30s
+// 	req.SetTimeout(5)
+// 	var allRsp AllRsp
+// 	allRsp.AllResult = make([]AllResult, 0)
+// 	for i, t := range o.Tokens {
+// 		time.Sleep(1 * time.Second)
+// 		fmt.Println("i: = ", i)
+// 		var allResult AllResult
 
-		allResult.Abi = t.Abi
-		allResult.Address = t.Address
-		allResult.ChainID = t.ChainID
-		allResult.Decimals = t.Decimals
-		allResult.LogoURI = t.LogoURI
-		allResult.Name = t.Name
+// 		allResult.Abi = t.Abi
+// 		allResult.Address = t.Address
+// 		allResult.ChainID = t.ChainID
+// 		allResult.Decimals = t.Decimals
+// 		allResult.LogoURI = t.LogoURI
+// 		allResult.Name = t.Name
 
-		url := `https://api.etherscan.io/api?module=token&action=tokeninfo&contractaddress=` + t.Address + `&apikey=FZTI57USSADTZ2IZI6TSFY1T98S1IU492M `
-		fmt.Println(url)
-		// GET 默认调用方法
-		resp, err := req.Get(url, nil)
-		if err != nil {
+// 		url := `https://api.etherscan.io/api?module=token&action=tokeninfo&contractaddress=` + t.Address + `&apikey=FZTI57USSADTZ2IZI6TSFY1T98S1IU492M `
+// 		fmt.Println(url)
+// 		// GET 默认调用方法
+// 		resp, err := req.Get(url, nil)
+// 		if err != nil {
 
-		} else {
-			fmt.Errorf("%+v", err)
-		}
-		// resp.Content()
-		body, err := ioutil.ReadAll(resp.Response().Body)
+// 		} else {
+// 			fmt.Errorf("%+v", err)
+// 		}
+// 		// resp.Content()
+// 		body, err := ioutil.ReadAll(resp.Response().Body)
 
-		if err != nil {
-			panic(err.Error())
-		}
-		var data DetailRsp
-		json.Unmarshal(body, &data)
-		fmt.Printf("detail rsp : %v\n-----------------", data)
-		allResult.Bitcointalk = data.Result[0].Bitcointalk
-		allResult.ContractAddress = data.Result[0].ContractAddress
-		allResult.TokenName = data.Result[0].TokenName
-		allResult.Symbol = data.Result[0].Symbol
-		allResult.Divisor = data.Result[0].Divisor
-		allResult.TokenType = data.Result[0].TokenType
-		allResult.TotalSupply = data.Result[0].TotalSupply
-		allResult.BlueCheckmark = data.Result[0].BlueCheckmark
-		allResult.Website = data.Result[0].Website
-		allResult.Email = data.Result[0].Email
-		allResult.Blog = data.Result[0].Blog
-		allResult.Reddit = data.Result[0].Reddit
-		allResult.Slack = data.Result[0].Slack
-		allResult.Facebook = data.Result[0].Facebook
-		allResult.Twitter = data.Result[0].Twitter
-		allResult.Github = data.Result[0].Github
-		allResult.Telegram = data.Result[0].Telegram
-		allResult.Wechat = data.Result[0].Wechat
-		allResult.Linkedin = data.Result[0].Linkedin
-		allResult.Discord = data.Result[0].Discord
-		allResult.Whitepaper = data.Result[0].Whitepaper
-		allResult.TokenPriceUSD = data.Result[0].TokenPriceUSD
-		allRsp.AllResult = append(allRsp.AllResult, allResult)
-	}
-	return allRsp
-}
+// 		if err != nil {
+// 			panic(err.Error())
+// 		}
+// 		var data DetailRsp
+// 		json.Unmarshal(body, &data)
+// 		fmt.Printf("detail rsp : %v\n-----------------", data)
+// 		allResult.Bitcointalk = data.Result[0].Bitcointalk
+// 		allResult.ContractAddress = data.Result[0].ContractAddress
+// 		allResult.TokenName = data.Result[0].TokenName
+// 		allResult.Symbol = data.Result[0].Symbol
+// 		allResult.Divisor = data.Result[0].Divisor
+// 		allResult.TokenType = data.Result[0].TokenType
+// 		allResult.TotalSupply = data.Result[0].TotalSupply
+// 		allResult.BlueCheckmark = data.Result[0].BlueCheckmark
+// 		allResult.Website = data.Result[0].Website
+// 		allResult.Email = data.Result[0].Email
+// 		allResult.Blog = data.Result[0].Blog
+// 		allResult.Reddit = data.Result[0].Reddit
+// 		allResult.Slack = data.Result[0].Slack
+// 		allResult.Facebook = data.Result[0].Facebook
+// 		allResult.Twitter = data.Result[0].Twitter
+// 		allResult.Github = data.Result[0].Github
+// 		allResult.Telegram = data.Result[0].Telegram
+// 		allResult.Wechat = data.Result[0].Wechat
+// 		allResult.Linkedin = data.Result[0].Linkedin
+// 		allResult.Discord = data.Result[0].Discord
+// 		allResult.Whitepaper = data.Result[0].Whitepaper
+// 		allResult.TokenPriceUSD = data.Result[0].TokenPriceUSD
+// 		allRsp.AllResult = append(allRsp.AllResult, allResult)
+// 	}
+// 	return allRsp
+// }
 
 // 总结果
 type AllRsp struct {
@@ -668,33 +612,33 @@ func analysisJson() ABIReq {
 	return user
 }
 
-func getAbi(o *ABIReq) *ABIReq {
-	req := HttpRequest.NewRequest()
-	// 设置超时时间，不设置时，默认30s
-	req.SetTimeout(5)
-	for i, t := range o.Tokens {
-		url := `https://api.etherscan.io/api?module=contract&action=getabi&address=` + t.Address + `&apikey=CXXZYY2UUWW2YWVNXFKDGTG4ZKUUQURYJZ`
-		// GET 默认调用方法
-		resp, err := req.Get(url, nil)
-		if err != nil {
+// func getAbi(o *ABIReq) *ABIReq {
+// 	req := HttpRequest.NewRequest()
+// 	// 设置超时时间，不设置时，默认30s
+// 	req.SetTimeout(5)
+// 	for i, t := range o.Tokens {
+// 		url := `https://api.etherscan.io/api?module=contract&action=getabi&address=` + t.Address + `&apikey=CXXZYY2UUWW2YWVNXFKDGTG4ZKUUQURYJZ`
+// 		// GET 默认调用方法
+// 		resp, err := req.Get(url, nil)
+// 		if err != nil {
 
-		} else {
-			fmt.Errorf("%+v", err)
-		}
-		// resp.Content()
-		body, err := ioutil.ReadAll(resp.Response().Body)
+// 		} else {
+// 			fmt.Errorf("%+v", err)
+// 		}
+// 		// resp.Content()
+// 		body, err := ioutil.ReadAll(resp.Response().Body)
 
-		if err != nil {
-			panic(err.Error())
-		}
+// 		if err != nil {
+// 			panic(err.Error())
+// 		}
 
-		var data ResultRsp
-		json.Unmarshal(body, &data)
-		fmt.Printf("Results: %v\n----------------- abi: %v", data, data.Result)
-		o.Tokens[i].Abi = data.Result
-	}
-	return o
-}
+// 		var data ResultRsp
+// 		json.Unmarshal(body, &data)
+// 		fmt.Printf("Results: %v\n----------------- abi: %v", data, data.Result)
+// 		o.Tokens[i].Abi = data.Result
+// 	}
+// 	return o
+// }
 
 type ABIReq struct {
 	Tokens []Tokens `json: "tokens"`
