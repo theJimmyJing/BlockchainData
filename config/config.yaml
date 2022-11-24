@@ -5,11 +5,9 @@
 serverversion: 2.0.0
 #---------------BlockchainData configuration---------------------#
 redis:
-  # dbAddress: [ 127.0.0.1:6379 ] #本地
-  # dbAddress: [ 3.0.175.230:46379 ] #测试环境
-  dbAddress: [ blockchaindata.ad9n4e.clustercfg.apse1.cache.amazonaws.com:6379 ] #生产环境
+  dbAddress: [ 127.0.0.1:6379 ] #本地
   dbMaxIdle: 128
   dbMaxActive: 0
   dbIdleTimeout: 120
   dbPassWord: #redis密码 建议修改
-  enableCluster: true #如果外部redis以集群方式启动，需要打开此开关
+  enableCluster: false #如果外部redis以集群方式启动，需要打开此开关
